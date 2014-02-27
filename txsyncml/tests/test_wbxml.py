@@ -3,9 +3,6 @@ from twisted.trial.unittest import TestCase
 from twisted.web import microdom
 
 from txsyncml.codecs import WbXmlCodec
-from txsyncml.commands import (
-    SyncML, SyncHdr, Target, Source, Cred, Meta, SyncBody, Item, Alert,
-    Anchor)
 from txsyncml.wbxml import wbxml2xml, xml2wbxml
 from txsyncml.tests.helpers import FixtureHelper, SyncMLClientHelper
 
