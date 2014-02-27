@@ -39,6 +39,6 @@ class SyncMLClientHelper(object):
         meta.add(Anchor(last, next))
         item = Item(target_db, source_db, meta)
         alert = Alert(cmd_id, code, items=[item])
-        body = SyncBody(alert=alert)
+        body = SyncBody(alerts=[alert])
 
         return SyncML(header=header, body=body)

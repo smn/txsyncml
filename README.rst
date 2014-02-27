@@ -13,6 +13,17 @@ As per the docs (chapter 6.3)::
     that the client overwrites all data in the server database.
 
 
+Stages of a SyncML Session
+--------------------------
+
+- Pkg #1 init
+- Pkg #2 creds challenge or OK (authenticated for session)
+- Pkg #3 init finish, start of sync
+- Pkg #4 server status + sync from server
+- Pkg #5 client status
+- Pkg #6 map acks to client
+
+
 |travis|_ |coveralls|_
 
 ::

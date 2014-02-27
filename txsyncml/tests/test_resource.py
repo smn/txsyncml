@@ -8,9 +8,10 @@ from twisted.web import server
 from treq import content
 from treq.client import HTTPClient
 
+from txsyncml import constants
+from txsyncml.codecs import XmlCodec, WbXmlCodec
 from txsyncml.resource import TxSyncMLResource
 from txsyncml.tests.helpers import FixtureHelper, SyncMLClientHelper
-from txsyncml.codecs import XmlCodec, WbXmlCodec
 
 
 class TxSyncMLTestCase(TestCase):
@@ -95,7 +96,9 @@ class ClientSyncTestCase(TxSyncMLTestCase):
 
     @inlineCallbacks
     def test_client_init(self):
+        # FIXME: this test passes because stuff in the server is hard coded.
+        #        revisit this when we're actually parsing stuff.
         xml = self.syncml.build_request()
         response = yield self.request(xml.toXml())
-        print dict(response.headers.getAllRawHeaders())
-        print (yield content(response))
+        body = yield content(response)
+        self.assertTrue(str(constants.AUTHENTICATION_ACCEPTED) in body)

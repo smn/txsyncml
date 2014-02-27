@@ -6,7 +6,7 @@ from twisted.words.xish.domish import Element
 from txsyncml import constants
 from txsyncml.commands import (
     SyncML, SyncHdr, Target, Source, Cred, Meta, SyncBody, Item, Alert,
-    Anchor)
+    Anchor, Data, Status)
 
 
 class SyncMLElementTestCase(TestCase):
@@ -106,3 +106,22 @@ class SyncMLElementTestCase(TestCase):
             "<Last>last</Last>"
             "<Next>next</Next>"
             "</Anchor>")
+
+    def test_data(self):
+        self.assertXml(
+            Data(constants.AUTHENTICATION_ACCEPTED),
+            '<Data>212</Data>')
+
+    def test_status(self):
+        self.assertXml(
+            Status(1, 2, 3, 'SyncHdr', 'target', 'source',
+                   constants.AUTHENTICATION_ACCEPTED),
+            "<Status>"
+            "<CmdID>1</CmdID>"
+            "<MsgRef>2</MsgRef>"
+            "<CmdRef>3</CmdRef>"
+            "<Cmd>SyncHdr</Cmd>"
+            "<TargetRef>target</TargetRef>"
+            "<SourceRef>source</SourceRef>"
+            "<Data>212</Data>"
+            "</Status>")

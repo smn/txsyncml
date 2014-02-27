@@ -57,6 +57,12 @@ class Source(SyncMLElement):
         self.addElement('LocURI', content=unicode(loc_uri))
 
 
+class Data(SyncMLElement):
+    def __init__(self, content):
+        super(Data, self).__init__((None, 'Data'))
+        self.addContent(unicode(content))
+
+
 class Cred(SyncMLElement):
 
     def __init__(self, username, password, auth_type='syncml:auth-basic'):
@@ -65,8 +71,7 @@ class Cred(SyncMLElement):
         self.add(Meta({
             'Type': auth_type,
         }))
-        self.addElement('Data', content=base64.b64encode('%s:%s' % (
-            username, password)))
+        self.add(Data(base64.b64encode('%s:%s' % (username, password))))
 
 
 class Meta(SyncMLElement):
@@ -87,16 +92,20 @@ class Meta(SyncMLElement):
 
 class SyncBody(SyncMLElement):
 
-    def __init__(self, alert=None):
+    def __init__(self, alerts=[], statuses=[]):
         super(SyncBody, self).__init__((None, 'SyncBody'))
-        if alert is not None:
+        for alert in alerts:
             self.add(alert)
+
+        for status in statuses:
+            self.add(status)
 
 
 class Alert(SyncMLElement):
 
     def __init__(self, cmd_id, code, items=[]):
         super(Alert, self).__init__((None, 'Alert'))
+        self.cmd_id = cmd_id
         self.addElement('CmdID', content=unicode(cmd_id))
         self.addElement('Data', content=unicode(code))
         for item in items:
@@ -118,3 +127,17 @@ class Anchor(SyncMLElement):
         super(Anchor, self).__init__(('syncml:metinf', 'Anchor'))
         self.addElement('Last', content=unicode(last))
         self.addElement('Next', content=unicode(next))
+
+
+class Status(SyncMLElement):
+
+    def __init__(self, cmd_id, msg_ref, cmd_ref, cmd,
+                 target_ref, source_ref, code):
+        super(Status, self).__init__((None, 'Status'))
+        self.addElement('CmdID', content=unicode(cmd_id))
+        self.addElement('MsgRef', content=unicode(msg_ref))
+        self.addElement('CmdRef', content=unicode(cmd_ref))
+        self.addElement('Cmd', content=cmd)
+        self.addElement('TargetRef', content=target_ref)
+        self.addElement('SourceRef', content=source_ref)
+        self.add(Data(code))

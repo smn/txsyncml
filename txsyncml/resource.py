@@ -8,6 +8,9 @@ from twisted.web import http
 from twisted.web.server import NOT_DONE_YET
 
 from txsyncml.codecs import get_codec
+from txsyncml import constants
+from txsyncml.commands import (
+    SyncML, SyncHdr, SyncBody, Target, Source, Status)
 
 
 class TxSyncMLError(Exception):
@@ -63,7 +66,17 @@ class TxSyncMLResource(Resource):
 
     def process_syncml(self, syncml, request):
         codec = self.get_codec(request)
-        return codec.encode(syncml)
+
+        header = SyncHdr(1, 1,
+                         target=Target('target'),
+                         source=Source('source'))
+        body = SyncBody(
+            statuses=[Status(cmd_id=1, msg_ref=1, cmd_ref=0, cmd='SyncHdr',
+                             target_ref='http://www.syncml.org/sync-server',
+                             source_ref='IMEI:493005100592800',
+                             code=constants.AUTHENTICATION_ACCEPTED)])
+        syncml = SyncML(header=header, body=body)
+        return codec.encode(syncml.toXml())
 
     def finish_request(self, response, request):
         codec = self.get_codec(request)
