@@ -20,6 +20,8 @@ class WbXmlCodec(NoopCodec):
     content_type = 'application/vnd.syncml+wbxml'
 
     def encode(self, data):
+        if isinstance(data, unicode):
+            data = data.encode('utf-8')
         return xml2wbxml(data)
 
     def decode(self, data):

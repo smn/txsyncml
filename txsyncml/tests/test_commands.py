@@ -10,9 +10,6 @@ from txsyncml.commands import (
 
 class SyncMLElementTestCase(TestCase):
 
-    def setUp(self):
-        pass
-
     def assertXml(self, element, xml_str):
         self.assertEqual(element.toXml(), xml_str)
 
@@ -73,7 +70,7 @@ class SyncMLElementTestCase(TestCase):
             '<SyncBody/>')
 
     def test_item(self):
-        meta = Meta({})
+        meta = Meta()
         meta.add(Anchor(234, 276))
         item = Item('target', 'source', meta)
         self.assertXml(

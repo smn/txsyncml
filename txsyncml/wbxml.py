@@ -9,12 +9,12 @@ from twisted.internet import reactor
 
 class WbXmlProcessProtocol(protocol.ProcessProtocol):
 
-    def __init__(self, xml, deferred):
-        self.xml = xml
+    def __init__(self, data, deferred):
+        self.data = data
         self.deferred = deferred
 
     def connectionMade(self):
-        self.transport.write(self.xml)
+        self.transport.write(self.data)
         self.transport.closeStdin()
 
     def outReceived(self, data):
