@@ -7,13 +7,14 @@ from txsyncml.commands import (
     SyncML, SyncHdr, Target, Source, Cred, Meta, SyncBody, Item, Alert,
     Anchor)
 from txsyncml.wbxml import wbxml2xml, xml2wbxml
-from txsyncml.tests.helpers import FixtureHelper
+from txsyncml.tests.helpers import FixtureHelper, SyncMLClientHelper
 
 
 class WbXmlTestCase(TestCase):
 
     def setUp(self):
         self.fixtures = FixtureHelper()
+        self.client = SyncMLClientHelper()
 
     @inlineCallbacks
     def test_encode_decode(self):
@@ -27,22 +28,8 @@ class WbXmlTestCase(TestCase):
 
     @inlineCallbacks
     def test_build_client_sync_init(self):
-        header = SyncHdr(
-            1, 1,
-            target=Target('http://www.syncml.org/sync-server'),
-            source=Source('IMEI:493005100592800'),
-            cred=Cred('Bruce2', 'OhBehave'),  # Sample from the spec
-            meta=Meta({
-                'MaxMsgSize': 5000
-            }))
-        meta = Meta()
-        meta.add(Anchor(234, 276))
-        item = Item('./contacts/james_bond', './dev-contacts', meta)
-        alert = Alert(1, 200, items=[item])
-        body = SyncBody(alert=alert)
-
-        syncml = SyncML(header=header, body=body)
         codec = WbXmlCodec()
+        syncml = self.client.build_request()
         wbxml = yield codec.encode(syncml.toXml())
         expected_wbxml = self.fixtures.get_fixture('client_sync_init.wbxml')
         self.assertEqual(wbxml, expected_wbxml)

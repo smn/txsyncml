@@ -3,14 +3,14 @@ from twisted.trial.unittest import TestCase
 from twisted.internet.defer import inlineCallbacks
 from twisted.web import microdom
 
-from txsyncml.codec import NoopCodec, WbXmlCodec
+from txsyncml.codecs import XmlCodec, WbXmlCodec
 from txsyncml.tests.helpers import FixtureHelper
 
 
-class NoopCodecTestCase(TestCase):
+class XmlCodecTestCase(TestCase):
 
     def setUp(self):
-        self.codec = NoopCodec()
+        self.codec = XmlCodec()
 
     @inlineCallbacks
     def test_encode(self):

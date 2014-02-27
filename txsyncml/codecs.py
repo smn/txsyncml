@@ -4,18 +4,20 @@ from twisted.internet.defer import succeed
 from txsyncml.wbxml import xml2wbxml, wbxml2xml
 
 
-class NoopCodec(object):
+class XmlCodec(object):
 
     content_type = 'application/vnd.syncml+xml'
 
     def encode(self, data):
+        if isinstance(data, unicode):
+            data = data.encode('utf-8')
         return succeed(data)
 
     def decode(self, data):
-        return succeed(data)
+        return succeed(data.decode('utf-8'))
 
 
-class WbXmlCodec(NoopCodec):
+class WbXmlCodec(XmlCodec):
 
     content_type = 'application/vnd.syncml+wbxml'
 
@@ -29,7 +31,7 @@ class WbXmlCodec(NoopCodec):
 
 
 codecs = [
-    NoopCodec(),
+    XmlCodec(),
     WbXmlCodec(),
 ]
 

@@ -9,13 +9,15 @@ from treq import content
 from treq.client import HTTPClient
 
 from txsyncml.resource import TxSyncMLResource
-from txsyncml.tests.helpers import FixtureHelper
-from txsyncml.codecs import NoopCodec, WbXmlCodec
+from txsyncml.tests.helpers import FixtureHelper, SyncMLClientHelper
+from txsyncml.codecs import XmlCodec, WbXmlCodec
 
 
 class TxSyncMLTestCase(TestCase):
 
     timeout = 1
+    content_type = 'application/vnd.syncml+xml'
+    codec = XmlCodec
 
     def setUp(self):
         self.pool = HTTPConnectionPool(reactor, persistent=False)
@@ -34,12 +36,15 @@ class TxSyncMLTestCase(TestCase):
             self.listener_port, ('/'.join(map(str, paths)) + '/'
                                  if paths else ''))
 
-    def request(self, fixture_name, headers={}):
+    def request_with_fixture(self, fixture_name, headers={}):
+        return self.request(self.fixtures.get_fixture(fixture_name), headers)
+
+    def request(self, data, headers={}):
         default_headers = {
             'Content-Type': [self.content_type],
         }
         default_headers.update(headers)
-        data = self.fixtures.get_fixture(fixture_name)
+
         d = self.encode_request_data(data)
         d.addCallback(
             lambda data: self.client.post(self.make_url(), data=data,
@@ -52,9 +57,6 @@ class TxSyncMLTestCase(TestCase):
 
 class XmlContentTypeTestCase(TxSyncMLTestCase):
 
-    content_type = 'application/vnd.syncml+xml'
-    codec = NoopCodec
-
     def assertContentType(self, request, content_type):
         headers = request.headers
         [found_content_type] = headers.getRawHeaders('Content-Type')
@@ -65,7 +67,7 @@ class XmlContentTypeTestCase(TxSyncMLTestCase):
 
     @inlineCallbacks
     def test_invalid_content_type(self):
-        response = yield self.request('client_sync_init.xml', {
+        response = yield self.request_with_fixture('client_sync_init.xml', {
             'Content-Type': ['foo'],
         })
         body = yield content(response)
@@ -74,8 +76,8 @@ class XmlContentTypeTestCase(TxSyncMLTestCase):
         self.assertEqual(body, 'Unsupported content-type.')
 
     @inlineCallbacks
-    def test_client_sync_init(self):
-        response = yield self.request('client_sync_init.xml')
+    def test_valid_content_type(self):
+        response = yield self.request_with_fixture('client_sync_init.xml')
         self.assertContentType(response, self.content_type)
 
 
@@ -83,3 +85,17 @@ class WbXmlContentTypeTestCase(XmlContentTypeTestCase):
 
     content_type = 'application/vnd.syncml+wbxml'
     codec = WbXmlCodec
+
+
+class ClientSyncTestCase(TxSyncMLTestCase):
+
+    def setUp(self):
+        super(ClientSyncTestCase, self).setUp()
+        self.syncml = SyncMLClientHelper()
+
+    @inlineCallbacks
+    def test_client_init(self):
+        xml = self.syncml.build_request()
+        response = yield self.request(xml.toXml())
+        print dict(response.headers.getAllRawHeaders())
+        print (yield content(response))
