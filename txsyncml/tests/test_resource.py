@@ -39,7 +39,11 @@ class TxSyncMLResourceTestCase(TestCase):
                                  if paths else ''))
 
     def send_syncml(self, fixture_name):
-        self.client.post(self.make_url(), data=)
+        self.client.post(
+            self.make_url(), data=self.get_fixture(fixture_name),
+            headers={
+                'Content-Type': ['application/vnd.syncml+xml'],
+            })
 
     def test_client_sync_init(self):
         print self.make_url('foo')
