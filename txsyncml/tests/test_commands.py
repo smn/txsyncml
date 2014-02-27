@@ -3,6 +3,7 @@ from base64 import b64encode
 from twisted.trial.unittest import TestCase
 from twisted.words.xish.domish import Element
 
+from txsyncml import constants
 from txsyncml.commands import (
     SyncML, SyncHdr, Target, Source, Cred, Meta, SyncBody, Item, Alert,
     Anchor)
@@ -92,7 +93,7 @@ class SyncMLElementTestCase(TestCase):
 
     def test_alert(self):
         self.assertXml(
-            Alert(1, 203, []),
+            Alert(1, constants.SYNC_REFRESH_FROM_CLIENT, []),
             "<Alert>"
             "<CmdID>1</CmdID>"
             "<Data>203</Data>"
