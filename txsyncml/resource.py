@@ -1,13 +1,12 @@
 # -*- test-case-name: txsyncml.tests.test_resource -*-
 
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred, succeed
+from twisted.internet.defer import Deferred
 from twisted.python import log
 from twisted.web.resource import Resource
 from twisted.web import http
 from twisted.web.server import NOT_DONE_YET
 
-from txsyncml.wbxml import xml2wbxml, wbxml2xml
 from txsyncml.codecs import get_codec
 
 
