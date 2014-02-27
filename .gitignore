@@ -3,3 +3,4 @@ dropin.cache
 _trial_temp/
 *.egg-info/
 /ve/
+.DS_Store
