@@ -2,9 +2,9 @@ import pkg_resources
 
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
-from twisted.internet.task import Clock
 from twisted.trial.unittest import TestCase
 from twisted.web.client import HTTPConnectionPool
+from twisted.web import http
 from twisted.web import server
 
 from treq import content
@@ -50,7 +50,18 @@ class TxSyncMLResourceTestCase(TestCase):
             headers=default_headers)
 
     @inlineCallbacks
+    def test_invalid_content_type(self):
+        response = yield self.send_syncml('client_sync_init.xml', {
+            'Content-Type': ['foo'],
+        })
+        body = yield content(response)
+        self.assertEqual(response.code, http.NOT_ACCEPTABLE)
+        self.assertTrue('cannot accept content type: foo' in body)
+
+    @inlineCallbacks
     def test_client_sync_init(self):
-        response = yield self.send_syncml('client_sync_init.xml')
+        response = yield self.send_syncml('client_sync_init.xml', {
+            'Content-Type': ['foo'],
+        })
         print dict(response.headers.getAllRawHeaders())
         print (yield content(response))
