@@ -1,5 +1,6 @@
 import pkg_resources
 
+from txsyncml import constants
 from txsyncml.commands import (
     SyncML, SyncHdr, Target, Source, Cred, Meta, SyncBody, Item, Alert,
     Anchor)
@@ -26,7 +27,7 @@ class SyncMLClientHelper(object):
             meta={'MaxMsgSize': 5000},
             last=234, next=276,
             target_db='./contacts/james_bond', source_db='./dev-contacts',
-            cmd_id=1, code=200):
+            cmd_id=1, code=constants.SYNC_TWO_WAY):
 
         header = SyncHdr(
             session_id, message_id,
