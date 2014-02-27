@@ -1,5 +1,5 @@
 from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
 from twisted.trial.unittest import TestCase
 from twisted.web.client import HTTPConnectionPool
 from twisted.web import http
@@ -10,13 +10,14 @@ from treq.client import HTTPClient
 
 from txsyncml.resource import TxSyncMLResource
 from txsyncml.tests.helpers import FixtureHelper
-from txsyncml.wbxml import xml2wbxml
+from txsyncml.codecs import NoopCodec, WbXmlCodec
 
 
 class TxSyncMLResourceTestCase(TestCase):
 
     timeout = 1
-    encode_wbxml = False
+    content_type = 'application/vnd.syncml+xml'
+    codec = NoopCodec
 
     def setUp(self):
         self.pool = HTTPConnectionPool(reactor, persistent=False)
@@ -35,43 +36,48 @@ class TxSyncMLResourceTestCase(TestCase):
             self.listener_port, ('/'.join(map(str, paths)) + '/'
                                  if paths else ''))
 
-    @inlineCallbacks
-    def send_syncml(self, fixture_name, headers=None):
-        if self.encode_wbxml:
-            default_headers = {
-                'Content-Type': ['application/vnd.syncml+wbxml'],
-            }
-            data = yield xml2wbxml(self.fixtures.get_fixture(fixture_name))
-        else:
-            default_headers = {
-                'Content-Type': ['application/vnd.syncml+xml'],
-            }
-            data = self.fixtures.get_fixture(fixture_name)
+    def request(self, fixture_name, headers={}):
+        default_headers = {
+            'Content-Type': [self.content_type],
+        }
+        default_headers.update(headers)
+        data = self.fixtures.get_fixture(fixture_name)
+        d = self.encode_request_data(data)
+        d.addCallback(
+            lambda data: self.client.post(self.make_url(), data=data,
+                                          headers=default_headers))
+        return d
 
-        if headers is not None:
-            default_headers.update(headers)
+    def encode_request_data(self, data):
+        return self.codec().encode(data)
 
-        response = yield self.client.post(self.make_url(), data=data,
-                                          headers=default_headers)
-        returnValue(response)
+    def assertContentType(self, request, content_type):
+        headers = request.headers
+        [found_content_type] = headers.getRawHeaders('Content-Type')
+        self.assertEqual(
+            content_type, found_content_type,
+            "Content-Types %r and %r don't match." % (
+                content_type, found_content_type))
 
     @inlineCallbacks
     def test_invalid_content_type(self):
-        response = yield self.send_syncml('client_sync_init.xml', {
+        response = yield self.request('client_sync_init.xml', {
             'Content-Type': ['foo'],
         })
         body = yield content(response)
         self.assertEqual(response.code, http.NOT_ACCEPTABLE)
+        self.assertContentType(response, 'text/plain')
         self.assertEqual(body, 'Unsupported content-type.')
 
     @inlineCallbacks
     def test_client_sync_init(self):
-        response = yield self.send_syncml('client_sync_init.xml')
-        # print dict(response.headers.getAllRawHeaders())
+        response = yield self.request('client_sync_init.xml')
+        self.assertContentType(response, self.content_type)
+        print dict(response.headers.getAllRawHeaders())
         # print (yield content(response))
 
 
 class TxSyncMLResourceWapBinaryXmlTestCase(TxSyncMLResourceTestCase):
 
-    timeout = 1
-    encode_wbxml = True
+    content_type = 'application/vnd.syncml+wbxml'
+    codec = WbXmlCodec

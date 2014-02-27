@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 from twisted.trial.unittest import TestCase
 from twisted.internet.defer import inlineCallbacks
+from twisted.web import microdom
 
 from txsyncml.codec import NoopCodec, WbXmlCodec
+from txsyncml.tests.helpers import FixtureHelper
 
 
 class NoopCodecTestCase(TestCase):
@@ -19,3 +21,25 @@ class NoopCodecTestCase(TestCase):
     def test_decode(self):
         byte_str = yield self.codec.decode('Zoe')
         self.assertEqual(byte_str, 'Zoe')
+
+
+class WbXmlCodecTestCase(TestCase):
+
+    def setUp(self):
+        self.codec = WbXmlCodec()
+        self.fixtures = FixtureHelper()
+
+    @inlineCallbacks
+    def test_decode(self):
+        wbxml = self.fixtures.get_fixture('client_sync_init.wbxml')
+        xml = yield self.codec.decode(wbxml)
+        dom = microdom.parseXMLString(xml)
+        [ver_proto] = dom.getElementsByTagName('VerProto')
+        self.assertEqual(ver_proto.firstChild().value, 'SyncML/1.1')
+
+    @inlineCallbacks
+    def test_encode(self):
+        wbxml = self.fixtures.get_fixture('client_sync_init.wbxml')
+        xml = self.fixtures.get_fixture('client_sync_init.xml')
+        codec_wbxml = yield self.codec.encode(xml)
+        self.assertEqual(wbxml, codec_wbxml)
