@@ -34,7 +34,7 @@ class TxSyncMLResource(Resource):
     def render_POST(self, request):
         d = Deferred()
         d.addCallback(self.handle_request)
-        d.addCallback(self.handle_syncml, request)
+        d.addCallback(self.process_syncml, request)
         d.addCallback(self.finish_request, request)
         d.addErrback(self.handle_request_error, request)
         reactor.callLater(0, d.callback, request)
@@ -61,7 +61,7 @@ class TxSyncMLResource(Resource):
         codec = self.get_codec(request)
         return codec.decode(request.content.read())
 
-    def handle_syncml(self, syncml, request):
+    def process_syncml(self, syncml, request):
         codec = self.get_codec(request)
         return codec.encode(syncml)
 
