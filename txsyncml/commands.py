@@ -30,14 +30,14 @@ class Target(SyncMLElement):
 
     def __init__(self, loc_uri):
         super(Target, self).__init__((None, 'Target'))
-        self.addElement('LocURI', content=loc_uri)
+        self.addElement('LocURI', content=unicode(loc_uri))
 
 
 class Source(SyncMLElement):
 
     def __init__(self, loc_uri):
         super(Source, self).__init__((None, 'Source'))
-        self.addElement('LocURI', content=loc_uri)
+        self.addElement('LocURI', content=unicode(loc_uri))
 
 
 class Cred(SyncMLElement):
@@ -56,5 +56,43 @@ class Meta(SyncMLElement):
 
     def __init__(self, values):
         super(Meta, self).__init__((None, 'Meta'))
-        for key, value in values.items():
-            self.addElement(('syncml:metinf', key), content=value)
+        for key, children in values.items():
+            element = self.addElement(('syncml:metinf', key))
+            for child in children:
+                if isinstance(child, Element):
+                    element.addChild(child)
+                else:
+                    element.addContent(child)
+
+
+class SyncBody(SyncMLElement):
+
+    def __init__(self):
+        super(SyncBody, self).__init__((None, 'SyncBody'))
+
+
+class Alert(SyncMLElement):
+
+    def __init__(self, cmd_id, code, items=[]):
+        super(Alert, self).__init__((None, 'Alert'))
+        self.addElement('CmdID', content=unicode(cmd_id))
+        self.addElement('Data', content=unicode(code))
+        for item in items:
+            self.add(item)
+
+
+class Item(SyncMLElement):
+
+    def __init__(self, target, source, meta):
+        super(Item, self).__init__((None, 'Item'))
+        self.add(Target(target))
+        self.add(Source(source))
+        self.add(meta)
+
+
+class Anchor(SyncMLElement):
+
+    def __init__(self, last, next):
+        super(Anchor, self).__init__(('syncml:metinf', 'Anchor'))
+        self.addElement('Last', content=unicode(last))
+        self.addElement('Next', content=unicode(next))
