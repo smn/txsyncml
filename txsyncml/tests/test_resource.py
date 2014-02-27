@@ -13,11 +13,9 @@ from txsyncml.tests.helpers import FixtureHelper
 from txsyncml.codecs import NoopCodec, WbXmlCodec
 
 
-class TxSyncMLResourceTestCase(TestCase):
+class TxSyncMLTestCase(TestCase):
 
     timeout = 1
-    content_type = 'application/vnd.syncml+xml'
-    codec = NoopCodec
 
     def setUp(self):
         self.pool = HTTPConnectionPool(reactor, persistent=False)
@@ -51,6 +49,12 @@ class TxSyncMLResourceTestCase(TestCase):
     def encode_request_data(self, data):
         return self.codec().encode(data)
 
+
+class XmlContentTypeTestCase(TxSyncMLTestCase):
+
+    content_type = 'application/vnd.syncml+xml'
+    codec = NoopCodec
+
     def assertContentType(self, request, content_type):
         headers = request.headers
         [found_content_type] = headers.getRawHeaders('Content-Type')
@@ -73,11 +77,9 @@ class TxSyncMLResourceTestCase(TestCase):
     def test_client_sync_init(self):
         response = yield self.request('client_sync_init.xml')
         self.assertContentType(response, self.content_type)
-        print dict(response.headers.getAllRawHeaders())
-        # print (yield content(response))
 
 
-class TxSyncMLResourceWapBinaryXmlTestCase(TxSyncMLResourceTestCase):
+class WbXmlContentTypeTestCase(XmlContentTypeTestCase):
 
     content_type = 'application/vnd.syncml+wbxml'
     codec = WbXmlCodec
