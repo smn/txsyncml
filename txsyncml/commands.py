@@ -4,7 +4,7 @@ import base64
 from twisted.words.xish.domish import Element
 
 
-class SyncMLCommand(object):
+class SyncMLElement(object):
 
     def __init__(self, name, value, ns=None):
         self.name = name
@@ -21,7 +21,7 @@ class SyncMLCommand(object):
         return element
 
 
-class SyncML(SyncMLCommand):
+class SyncML(SyncMLElement):
 
     def __init__(self, header=None, body=None):
         self.header = header
@@ -36,7 +36,7 @@ class SyncML(SyncMLCommand):
         return element
 
 
-class SyncHdr(SyncMLCommand):
+class SyncHdr(SyncMLElement):
 
     def __init__(self, session_id, msg_id,
                  target=None, source=None, cred=None, meta=None):
@@ -68,7 +68,7 @@ class SyncHdr(SyncMLCommand):
         return element
 
 
-class Target(SyncMLCommand):
+class Target(SyncMLElement):
 
     def __init__(self, loc_uri):
         self.loc_uri = loc_uri
@@ -79,7 +79,7 @@ class Target(SyncMLCommand):
         return element
 
 
-class Source(SyncMLCommand):
+class Source(SyncMLElement):
 
     def __init__(self, loc_uri):
         self.loc_uri = loc_uri
@@ -90,7 +90,7 @@ class Source(SyncMLCommand):
         return element
 
 
-class Data(SyncMLCommand):
+class Data(SyncMLElement):
     def __init__(self, content):
         self.content = content
 
@@ -100,7 +100,7 @@ class Data(SyncMLCommand):
         return element
 
 
-class Cred(SyncMLCommand):
+class Cred(SyncMLElement):
 
     def __init__(self, username, password, auth_type='syncml:auth-basic'):
         self.username = username
@@ -111,7 +111,7 @@ class Cred(SyncMLCommand):
         element = Element((None, 'Cred'))
         element.addChild(
             Meta([
-                SyncMLCommand('Type', self.auth_type, 'syncml:metinf')
+                SyncMLElement('Type', self.auth_type, 'syncml:metinf')
             ]).build())
         element.addChild(
             Data(base64.b64encode('%s:%s' % (
@@ -119,7 +119,7 @@ class Cred(SyncMLCommand):
         return element
 
 
-class Meta(SyncMLCommand):
+class Meta(SyncMLElement):
     def __init__(self, children=[]):
         self.children = children
 
@@ -130,7 +130,7 @@ class Meta(SyncMLCommand):
         return element
 
 
-class SyncBody(SyncMLCommand):
+class SyncBody(SyncMLElement):
 
     def __init__(self, alerts=[], statuses=[]):
         self.alerts = alerts
@@ -146,7 +146,7 @@ class SyncBody(SyncMLCommand):
         return element
 
 
-class Alert(SyncMLCommand):
+class Alert(SyncMLElement):
 
     def __init__(self, cmd_id, code, items=[]):
         self.cmd_id = cmd_id
@@ -162,7 +162,7 @@ class Alert(SyncMLCommand):
         return element
 
 
-class Item(SyncMLCommand):
+class Item(SyncMLElement):
 
     def __init__(self, target, source, meta):
         self.target = target
@@ -177,7 +177,7 @@ class Item(SyncMLCommand):
         return element
 
 
-class Anchor(SyncMLCommand):
+class Anchor(SyncMLElement):
 
     def __init__(self, last, next):
         self.last = last
@@ -190,7 +190,7 @@ class Anchor(SyncMLCommand):
         return element
 
 
-class Status(SyncMLCommand):
+class Status(SyncMLElement):
 
     def __init__(self, cmd_id, msg_ref, cmd_ref, cmd,
                  target_ref, source_ref, code):

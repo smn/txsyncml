@@ -1,12 +1,11 @@
 from base64 import b64encode
 
 from twisted.trial.unittest import TestCase
-from twisted.words.xish.domish import Element
 
 from txsyncml import constants
 from txsyncml.commands import (
     SyncML, SyncHdr, Target, Source, Cred, Meta, SyncBody, Item, Alert,
-    Anchor, Data, Status, SyncMLCommand)
+    Anchor, Data, Status, SyncMLElement)
 
 
 class SyncMLElementTestCase(TestCase):
@@ -53,9 +52,9 @@ class SyncMLElementTestCase(TestCase):
 
     def test_meta(self):
         meta = Meta([
-            SyncMLCommand('Foo', 'Bar', 'syncml:metinf'),
-            SyncMLCommand('Baz', [
-                SyncMLCommand('one', 'ok')
+            SyncMLElement('Foo', 'Bar', 'syncml:metinf'),
+            SyncMLElement('Baz', [
+                SyncMLElement('one', 'ok')
             ], 'syncml:metinf')
         ])
 

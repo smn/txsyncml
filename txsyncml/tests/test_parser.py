@@ -12,4 +12,5 @@ class SyncMLParserTestCase(TestCase):
 
     def test_parsing(self):
         data = self.fixtures.get_fixture('client_sync_init.xml')
-        self.parser.parse(data)
+        result = self.parser.parse(data)
+        result.dump()

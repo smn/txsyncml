@@ -1,69 +1,70 @@
 # -*- test-case-name: txsyncml.tests.test_parser -*-
 
-from twisted.internet.defer import Deferred
 from twisted.web.sux import XMLParser
-from twisted.words.xish.domish import Element
+
+from txsyncml.commands import SyncMLElement
 
 
-class BaseParser(XMLParser):
+class ParsedElement(object):
+
+    def __init__(self, name, value=None, attrs={}, children=None):
+        self.name = name
+        self.value = value
+        self.attrs = {}
+        self.children = ([] if children is None else children)
+
+    def append(self, child):
+        self.children.append(child)
+
+    def __repr__(self):
+        return '<ParsedElement name=%r, value=%r, attrs=%r children=%r>' % (
+            self.name, self.value, self.attrs, self.children)
+
+    def dump(self, indentation=0):
+        """
+        Debug method to see what's going on
+        """
+        def i(s):
+            print (indentation * '  ') + s
+        i('Name: %r' % (self.name,))
+        i('Value: %r' % (self.value,))
+        i('Attrs: %r' % (self.attrs,))
+        i('Children:')
+        for child in self.children:
+            child.dump(indentation=indentation+1)
+
+
+class SyncMLParser(XMLParser):
 
     def __init__(self):
         self.connectionMade()
         self.chain = []
         self.registry = []
-
-    def gotTagStart(self, tagname, attrs):
-        element = Element((None, tagname))
-        for key, value in attrs.items():
-            element[key] = value
-        self.chain.append(element)
-
-    def gotText(self, text):
-        self.current_text = text
-
-    def gotTagEnd(self, tagname):
-        element = self.chain.pop()
-        if self.current_text:
-            element.addContent(self.current_text)
-
-        if self.chain:
-            self.parent = self.chain[-1]
-            self.parent.addChild(element)
-            handler_func_name = 'on_%s_in_%s' % (element.name.lower(),
-                                                 self.parent.name.lower())
-        else:
-            self.parent = None
-            handler_func_name = 'on_%s' % (element.name.lower())
-
-        handler = getattr(self, handler_func_name, self.noop)
-        handler(element)
-
-    def noop(self, element):
-        pass
-
-
-class SyncMLParser(BaseParser):
-
-    def __init__(self):
-        BaseParser.__init__(self)
-        self.syncml_state = None
+        self.root = None
 
     def parse(self, data):
         self.dataReceived(data)
+        return self.root
 
-    def on_synchdr_in_syncml(self, synchdr):
-        self.switch_state('HEADER')
+    def gotTagStart(self, tagname, attrs):
+        pe = ParsedElement(tagname, attrs=attrs)
+        self.chain.append(pe)
 
-    def on_syncbody_in_syncml(self, syncbody):
-        self.switch_state('BODY')
+    def gotText(self, text):
+        self.chain[-1].value = text
 
-    def on_alert_in_syncbody(self, alert):
-        print 'parent', self.parent.name
-        print 'hi!', alert.name
+    def gotTagEnd(self, tagname):
+        pe = self.chain.pop()
 
-    def on_verdtd_in_synchdr(self, verdtd):
-        print 'got', verdtd.name
+        handler_func_name = 'on_%s' % (pe.name.lower())
+        handler = getattr(self, handler_func_name, self.noop)
+        parsed = handler(pe)
 
-    def switch_state(self, state):
-        self.syncml_state = state
-        print 'state:', state
+        if self.chain:
+            parent = self.chain[-1]
+            parent.append(parsed)
+        else:
+            self.root = parsed
+
+    def noop(self, element):
+        return element
