@@ -6,13 +6,13 @@ from twisted.words.xish.domish import Element
 from txsyncml import constants
 from txsyncml.commands import (
     SyncML, SyncHdr, Target, Source, Cred, Meta, SyncBody, Item, Alert,
-    Anchor, Data, Status)
+    Anchor, Data, Status, SyncMLCommand)
 
 
 class SyncMLElementTestCase(TestCase):
 
     def assertXml(self, element, xml_str):
-        self.assertEqual(element.toXml(), xml_str)
+        self.assertEqual(element.build().toXml(), xml_str)
 
     def test_syncml(self):
         self.assertXml(SyncML(), '<SyncML/>')
@@ -52,12 +52,15 @@ class SyncMLElementTestCase(TestCase):
             "</Cred>" % (b64encode("foo:bar")))
 
     def test_meta(self):
-        el = Element((None, 'one'))
-        el.addContent('ok')
+        meta = Meta([
+            SyncMLCommand('Foo', 'Bar', 'syncml:metinf'),
+            SyncMLCommand('Baz', [
+                SyncMLCommand('one', 'ok')
+            ], 'syncml:metinf')
+        ])
+
         self.assertXml(
-            Meta({
-                'Foo': ['Bar'],
-                'Baz': [el]}),
+            meta,
             "<Meta>"
             "<Foo xmlns='syncml:metinf'>Bar</Foo>"
             "<Baz xmlns='syncml:metinf'>"
@@ -71,8 +74,7 @@ class SyncMLElementTestCase(TestCase):
             '<SyncBody/>')
 
     def test_item(self):
-        meta = Meta()
-        meta.add(Anchor(234, 276))
+        meta = Meta([Anchor(234, 276)])
         item = Item('target', 'source', meta)
         self.assertXml(
             item,

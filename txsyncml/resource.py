@@ -76,7 +76,7 @@ class TxSyncMLResource(Resource):
                              source_ref='IMEI:493005100592800',
                              code=constants.AUTHENTICATION_ACCEPTED)])
         syncml = SyncML(header=header, body=body)
-        return codec.encode(syncml.toXml())
+        return codec.encode(syncml.build().toXml())
 
     def finish_request(self, response, request):
         codec = self.get_codec(request)

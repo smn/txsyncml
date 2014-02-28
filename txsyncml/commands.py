@@ -4,140 +4,211 @@ import base64
 from twisted.words.xish.domish import Element
 
 
-class SyncMLElement(Element):
+class SyncMLCommand(object):
 
-    def add(self, element):
-        self.addChild(element)
+    def __init__(self, name, value, ns=None):
+        self.name = name
+        self.value = value
+        self.ns = ns
+
+    def build(self):
+        element = Element((self.ns, self.name))
+        if isinstance(self.value, list):
+            for item in self.value:
+                element.addChild(item.build())
+        else:
+            element.addContent(self.value)
+        return element
 
 
-class SyncML(SyncMLElement):
+class SyncML(SyncMLCommand):
 
     def __init__(self, header=None, body=None):
-        super(SyncML, self).__init__((None, 'SyncML'))
-        if header is not None:
-            self.add(header)
-        if body is not None:
-            self.add(body)
+        self.header = header
+        self.body = body
+
+    def build(self):
+        element = Element((None, 'SyncML'))
+        if self.header is not None:
+            element.addChild(self.header.build())
+        if self.body is not None:
+            element.addChild(self.body.build())
+        return element
 
 
-class SyncHdr(SyncMLElement):
+class SyncHdr(SyncMLCommand):
 
     def __init__(self, session_id, msg_id,
                  target=None, source=None, cred=None, meta=None):
-        super(SyncHdr, self).__init__((None, 'SyncHdr'))
-        self.addElement('VerDTD', content='1.1')
-        self.addElement('VerProto', content='SyncML/1.1')
-        self.addElement('SessionID', content=unicode(session_id))
-        self.addElement('MsgID', content=unicode(msg_id))
+        self.session_id = session_id
+        self.msg_id = msg_id
+        self.target = target
+        self.source = source
+        self.cred = cred
+        self.meta = meta
 
-        if target is not None:
-            self.add(target)
+    def build(self):
+        element = Element((None, 'SyncHdr'))
+        element.addElement('VerDTD', content='1.1')
+        element.addElement('VerProto', content='SyncML/1.1')
+        element.addElement('SessionID', content=unicode(self.session_id))
+        element.addElement('MsgID', content=unicode(self.msg_id))
 
-        if source is not None:
-            self.add(source)
+        if self.target is not None:
+            element.addChild(self.target.build())
 
-        if cred is not None:
-            self.add(cred)
+        if self.source is not None:
+            element.addChild(self.source.build())
 
-        if meta is not None:
-            self.add(meta)
+        if self.cred is not None:
+            element.addChild(self.cred.build())
+
+        if self.meta is not None:
+            element.addChild(self.meta.build())
+        return element
 
 
-class Target(SyncMLElement):
+class Target(SyncMLCommand):
 
     def __init__(self, loc_uri):
-        super(Target, self).__init__((None, 'Target'))
-        self.addElement('LocURI', content=unicode(loc_uri))
+        self.loc_uri = loc_uri
+
+    def build(self):
+        element = Element((None, 'Target'))
+        element.addElement('LocURI', content=unicode(self.loc_uri))
+        return element
 
 
-class Source(SyncMLElement):
+class Source(SyncMLCommand):
 
     def __init__(self, loc_uri):
-        super(Source, self).__init__((None, 'Source'))
-        self.addElement('LocURI', content=unicode(loc_uri))
+        self.loc_uri = loc_uri
+
+    def build(self):
+        element = Element((None, 'Source'))
+        element.addElement('LocURI', content=unicode(self.loc_uri))
+        return element
 
 
-class Data(SyncMLElement):
+class Data(SyncMLCommand):
     def __init__(self, content):
-        super(Data, self).__init__((None, 'Data'))
-        self.addContent(unicode(content))
+        self.content = content
+
+    def build(self):
+        element = Element((None, 'Data'))
+        element.addContent(unicode(self.content))
+        return element
 
 
-class Cred(SyncMLElement):
+class Cred(SyncMLCommand):
 
     def __init__(self, username, password, auth_type='syncml:auth-basic'):
-        super(Cred, self).__init__((None, 'Cred'))
+        self.username = username
+        self.password = password
+        self.auth_type = auth_type
 
-        self.add(Meta({
-            'Type': auth_type,
-        }))
-        self.add(Data(base64.b64encode('%s:%s' % (username, password))))
-
-
-class Meta(SyncMLElement):
-    # NOTE: this needs some more thought, it's being too clever.
-    def __init__(self, values={}):
-        super(Meta, self).__init__((None, 'Meta'))
-        for key, children in values.items():
-            element = self.addElement(('syncml:metinf', key))
-            if not isinstance(children, list):
-                children = [children]
-
-            for child in children:
-                if isinstance(child, Element):
-                    element.addChild(child)
-                else:
-                    element.addContent(unicode(child))
+    def build(self):
+        element = Element((None, 'Cred'))
+        element.addChild(
+            Meta([
+                SyncMLCommand('Type', self.auth_type, 'syncml:metinf')
+            ]).build())
+        element.addChild(
+            Data(base64.b64encode('%s:%s' % (
+                self.username, self.password))).build())
+        return element
 
 
-class SyncBody(SyncMLElement):
+class Meta(SyncMLCommand):
+    def __init__(self, children=[]):
+        self.children = children
+
+    def build(self):
+        element = Element((None, 'Meta'))
+        for child in self.children:
+            element.addChild(child.build())
+        return element
+
+
+class SyncBody(SyncMLCommand):
 
     def __init__(self, alerts=[], statuses=[]):
-        super(SyncBody, self).__init__((None, 'SyncBody'))
-        for alert in alerts:
-            self.add(alert)
+        self.alerts = alerts
+        self.statuses = statuses
 
-        for status in statuses:
-            self.add(status)
+    def build(self):
+        element = Element((None, 'SyncBody'))
+        for alert in self.alerts:
+            element.addChild(alert.build())
+
+        for status in self.statuses:
+            element.addChild(status.build())
+        return element
 
 
-class Alert(SyncMLElement):
+class Alert(SyncMLCommand):
 
     def __init__(self, cmd_id, code, items=[]):
-        super(Alert, self).__init__((None, 'Alert'))
         self.cmd_id = cmd_id
-        self.addElement('CmdID', content=unicode(cmd_id))
-        self.addElement('Data', content=unicode(code))
-        for item in items:
-            self.add(item)
+        self.code = code
+        self.items = items
+
+    def build(self):
+        element = Element((None, 'Alert'))
+        element.addElement('CmdID', content=unicode(self.cmd_id))
+        element.addElement('Data', content=unicode(self.code))
+        for item in self.items:
+            element.addChild(item.build())
+        return element
 
 
-class Item(SyncMLElement):
+class Item(SyncMLCommand):
 
     def __init__(self, target, source, meta):
-        super(Item, self).__init__((None, 'Item'))
-        self.add(Target(target))
-        self.add(Source(source))
-        self.add(meta)
+        self.target = target
+        self.source = source
+        self.meta = meta
+
+    def build(self):
+        element = Element((None, 'Item'))
+        element.addChild(Target(self.target).build())
+        element.addChild(Source(self.source).build())
+        element.addChild(self.meta.build())
+        return element
 
 
-class Anchor(SyncMLElement):
+class Anchor(SyncMLCommand):
 
     def __init__(self, last, next):
-        super(Anchor, self).__init__(('syncml:metinf', 'Anchor'))
-        self.addElement('Last', content=unicode(last))
-        self.addElement('Next', content=unicode(next))
+        self.last = last
+        self.next = next
+
+    def build(self):
+        element = Element(('syncml:metinf', 'Anchor'))
+        element.addElement('Last', content=unicode(self.last))
+        element.addElement('Next', content=unicode(self.next))
+        return element
 
 
-class Status(SyncMLElement):
+class Status(SyncMLCommand):
 
     def __init__(self, cmd_id, msg_ref, cmd_ref, cmd,
                  target_ref, source_ref, code):
-        super(Status, self).__init__((None, 'Status'))
-        self.addElement('CmdID', content=unicode(cmd_id))
-        self.addElement('MsgRef', content=unicode(msg_ref))
-        self.addElement('CmdRef', content=unicode(cmd_ref))
-        self.addElement('Cmd', content=cmd)
-        self.addElement('TargetRef', content=target_ref)
-        self.addElement('SourceRef', content=source_ref)
-        self.add(Data(code))
+        self.cmd_id = cmd_id
+        self.msg_ref = msg_ref
+        self.cmd_ref = cmd_ref
+        self.cmd = cmd
+        self.target_ref = target_ref
+        self.source_ref = source_ref
+        self.code = code
+
+    def build(self):
+        element = Element((None, 'Status'))
+        element.addElement('CmdID', content=unicode(self.cmd_id))
+        element.addElement('MsgRef', content=unicode(self.msg_ref))
+        element.addElement('CmdRef', content=unicode(self.cmd_ref))
+        element.addElement('Cmd', content=self.cmd)
+        element.addElement('TargetRef', content=self.target_ref)
+        element.addElement('SourceRef', content=self.source_ref)
+        element.addChild(Data(self.code).build())
+        return element
