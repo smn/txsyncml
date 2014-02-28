@@ -10,7 +10,17 @@ class SyncMLParserTestCase(TestCase):
         self.parser = SyncMLParser()
         self.fixtures = FixtureHelper()
 
-    def test_parsing(self):
+    def test_header_parsing(self):
         data = self.fixtures.get_fixture('client_sync_init.xml')
         result = self.parser.parse(data)
-        result.dump()
+        header = result.get('SyncHdr')
+        [verdtd] = header.get('VerDTD')
+        self.assertEqual(verdtd.value, '1.1')
+        [verproto] = header.get('VerProto')
+        self.assertEqual(verproto.value, 'SyncML/1.1')
+        [session_id] = header.get('SessionID')
+        self.assertEqual(session_id.value, '1')
+        [msg_id] = header.get('MsgID')
+        self.assertEqual(msg_id.value, '1')
+        target_locuri = header.get('Target').get('LocURI')
+        print target_locuri

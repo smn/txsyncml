@@ -2,7 +2,12 @@
 
 from twisted.web.sux import XMLParser
 
-from txsyncml.commands import SyncMLElement
+
+class ParsedElementList(list):
+
+    def get(self, name):
+        return ParsedElementList(
+            [child for child in self if child.name == name])
 
 
 class ParsedElement(object):
@@ -11,7 +16,8 @@ class ParsedElement(object):
         self.name = name
         self.value = value
         self.attrs = {}
-        self.children = ([] if children is None else children)
+        self.children = ParsedElementList(
+            [] if children is None else children)
 
     def append(self, child):
         self.children.append(child)
@@ -25,13 +31,19 @@ class ParsedElement(object):
         Debug method to see what's going on
         """
         def i(s):
-            print (indentation * '  ') + s
+            print (indentation * ' ') + s
         i('Name: %r' % (self.name,))
         i('Value: %r' % (self.value,))
         i('Attrs: %r' % (self.attrs,))
         i('Children:')
         for child in self.children:
             child.dump(indentation=indentation+1)
+
+    def get(self, name):
+        matches = self.children.get(name)
+        if len(matches) == 1:
+            return matches[0].children
+        return matches
 
 
 class SyncMLParser(XMLParser):
