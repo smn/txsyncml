@@ -5,7 +5,7 @@ from twisted.trial.unittest import TestCase
 from txsyncml import constants
 from txsyncml.commands import (
     SyncML, SyncHdr, Target, Source, Cred, Meta, SyncBody, Item, Alert,
-    Anchor, Data, Status, SyncMLElement)
+    Anchor, Data, Status, Type)
 
 
 class SyncMLElementTestCase(TestCase):
@@ -14,11 +14,11 @@ class SyncMLElementTestCase(TestCase):
         self.assertEqual(element.build().toXml(), xml_str)
 
     def test_syncml(self):
-        self.assertXml(SyncML(), '<SyncML/>')
+        self.assertXml(SyncML.create(), '<SyncML/>')
 
     def test_synchdr(self):
         self.assertXml(
-            SyncHdr('1', '1'),
+            SyncHdr.create('1', '1'),
             '<SyncHdr>'
             '<VerDTD>1.1</VerDTD>'
             '<VerProto>SyncML/1.1</VerProto>'
@@ -28,21 +28,21 @@ class SyncMLElementTestCase(TestCase):
 
     def test_target(self):
         self.assertXml(
-            Target('foo'),
+            Target.create('foo'),
             '<Target>'
             '<LocURI>foo</LocURI>'
             '</Target>')
 
     def test_source(self):
         self.assertXml(
-            Source('foo'),
+            Source.create('foo'),
             '<Source>'
             '<LocURI>foo</LocURI>'
             '</Source>')
 
     def test_cred(self):
         self.assertXml(
-            Cred('foo', 'bar', auth_type='some-algorithm'),
+            Cred.create('foo', 'bar', auth_type='some-algorithm'),
             "<Cred>"
             "<Meta>"
             "<Type xmlns='syncml:metinf'>some-algorithm</Type>"
@@ -51,30 +51,25 @@ class SyncMLElementTestCase(TestCase):
             "</Cred>" % (b64encode("foo:bar")))
 
     def test_meta(self):
-        meta = Meta([
-            SyncMLElement('Foo', 'Bar', 'syncml:metinf'),
-            SyncMLElement('Baz', [
-                SyncMLElement('one', 'ok')
-            ], 'syncml:metinf')
+        meta = Meta.create([
+            Type.create('syncml:auth-basic'),
         ])
 
         self.assertXml(
             meta,
             "<Meta>"
-            "<Foo xmlns='syncml:metinf'>Bar</Foo>"
-            "<Baz xmlns='syncml:metinf'>"
-            "<one>ok</one>"
-            "</Baz>"
+            "<Type xmlns='syncml:metinf'>syncml:auth-basic</Type>"
             "</Meta>")
 
     def test_syncbody(self):
         self.assertXml(
-            SyncBody(),
+            SyncBody.create(),
             '<SyncBody/>')
 
     def test_item(self):
-        meta = Meta([Anchor(234, 276)])
-        item = Item('target', 'source', meta)
+        anchor = Anchor.create(234, 276)
+        item = Item.create('target', 'source', anchor)
+        # print item.children
         self.assertXml(
             item,
             "<Item>"
@@ -94,7 +89,7 @@ class SyncMLElementTestCase(TestCase):
 
     def test_alert(self):
         self.assertXml(
-            Alert(1, constants.SYNC_REFRESH_FROM_CLIENT, []),
+            Alert.create(1, constants.SYNC_REFRESH_FROM_CLIENT),
             "<Alert>"
             "<CmdID>1</CmdID>"
             "<Data>203</Data>"
@@ -102,7 +97,7 @@ class SyncMLElementTestCase(TestCase):
 
     def test_anchor(self):
         self.assertXml(
-            Anchor('last', 'next'),
+            Anchor.create('last', 'next'),
             "<Anchor xmlns='syncml:metinf'>"
             "<Last>last</Last>"
             "<Next>next</Next>"
@@ -110,13 +105,13 @@ class SyncMLElementTestCase(TestCase):
 
     def test_data(self):
         self.assertXml(
-            Data(constants.AUTHENTICATION_ACCEPTED),
+            Data.create(constants.AUTHENTICATION_ACCEPTED),
             '<Data>212</Data>')
 
     def test_status(self):
         self.assertXml(
-            Status(1, 2, 3, 'SyncHdr', 'target', 'source',
-                   constants.AUTHENTICATION_ACCEPTED),
+            Status.create(1, 2, 3, 'SyncHdr', 'target', 'source',
+                          constants.AUTHENTICATION_ACCEPTED),
             "<Status>"
             "<CmdID>1</CmdID>"
             "<MsgRef>2</MsgRef>"
