@@ -11,7 +11,7 @@ from txsyncml.commands import (
 class SyncMLElementTestCase(TestCase):
 
     def assertXml(self, element, xml_str):
-        self.assertEqual(element.build().toXml(), xml_str)
+        self.assertEqual(element.to_xml(), xml_str)
 
     def test_syncml(self):
         self.assertXml(SyncML.create(), '<SyncML/>')

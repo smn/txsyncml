@@ -40,6 +40,12 @@ class SyncMLElement(object):
             element.addChild(child.build())
         return element
 
+    def to_xml(self):
+        return self.build().toXml()
+
+    def find(self, child_name):
+        return [child for child in self.children if child.name == child_name]
+
 
 class SessionID(SyncMLElement):
 

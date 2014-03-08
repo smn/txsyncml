@@ -2,48 +2,7 @@
 
 from twisted.web.sux import XMLParser
 
-
-class ParsedElementList(list):
-
-    def get(self, name):
-        return ParsedElementList(
-            [child for child in self if child.name == name])
-
-
-class ParsedElement(object):
-
-    def __init__(self, name, value=None, attrs={}, children=None):
-        self.name = name
-        self.value = value
-        self.attrs = {}
-        self.children = ParsedElementList(
-            [] if children is None else children)
-
-    def append(self, child):
-        self.children.append(child)
-
-    def __repr__(self):
-        return '<ParsedElement name=%r, value=%r, attrs=%r children=%r>' % (
-            self.name, self.value, self.attrs, self.children)
-
-    def dump(self, indentation=0):
-        """
-        Debug method to see what's going on
-        """
-        def i(s):
-            print (indentation * ' ') + s
-        i('Name: %r' % (self.name,))
-        i('Value: %r' % (self.value,))
-        i('Attrs: %r' % (self.attrs,))
-        i('Children:')
-        for child in self.children:
-            child.dump(indentation=indentation+1)
-
-    def get(self, name):
-        matches = self.children.get(name)
-        if len(matches) == 1:
-            return matches[0].children
-        return matches
+from txsyncml import commands
 
 
 class SyncMLParser(XMLParser):
@@ -59,24 +18,16 @@ class SyncMLParser(XMLParser):
         return self.root
 
     def gotTagStart(self, tagname, attrs):
-        pe = ParsedElement(tagname, attrs=attrs)
-        self.chain.append(pe)
+        klass = getattr(commands, tagname)
+        self.chain.append(klass(tagname, None))
 
     def gotText(self, text):
         self.chain[-1].value = text
 
     def gotTagEnd(self, tagname):
-        pe = self.chain.pop()
-
-        handler_func_name = 'on_%s' % (pe.name.lower())
-        handler = getattr(self, handler_func_name, self.noop)
-        parsed = handler(pe)
-
+        element = self.chain.pop()
         if self.chain:
             parent = self.chain[-1]
-            parent.append(parsed)
+            parent.add_child(element)
         else:
-            self.root = parsed
-
-    def noop(self, element):
-        return element
+            self.root = element
