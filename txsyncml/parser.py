@@ -24,7 +24,12 @@ class SyncMLParser(XMLParser):
         self.chain.append(klass(tagname, None))
 
     def gotText(self, text):
-        self.chain[-1].value = text
+        # This happens when a DTD is parsed
+        if self.chain:
+            self.chain[-1].value = text
+
+    def gotDoctype(self, doctype):
+        pass
 
     def gotTagEnd(self, tagname):
         element = self.chain.pop()

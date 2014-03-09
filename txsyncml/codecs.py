@@ -14,7 +14,7 @@ class XmlCodec(object):
         return succeed(data)
 
     def decode(self, data):
-        return succeed(data.decode('utf-8'))
+        return succeed(data)
 
 
 class WbXmlCodec(XmlCodec):

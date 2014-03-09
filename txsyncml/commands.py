@@ -44,6 +44,8 @@ class SyncMLElement(object):
         return self.build().toXml()
 
     def find(self, child_name):
+        if not isinstance(child_name, basestring):
+            child_name = child_name.__name__
         return [child for child in self.children if child.name == child_name]
 
 
@@ -316,3 +318,9 @@ class SyncML(SyncMLElement):
     @classmethod
     def create(cls, header=None, body=None):
         return cls('SyncML', None, children=filter(None, [header, body]))
+
+    def get_header(self):
+        return self.find(SyncHdr)[0]
+
+    def get_body(self):
+        return self.find(SyncBody)[0]

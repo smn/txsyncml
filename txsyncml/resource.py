@@ -68,6 +68,10 @@ class TxSyncMLResource(Resource):
     def process_syncml(self, syncml, request):
         codec = self.get_codec(request)
 
+        doc = SyncMLParser.parse(syncml)
+        header = doc.get_header()
+        body = doc.get_body()
+
         header = SyncHdr.create(
             1, 1,
             target=Target.create('target'),
