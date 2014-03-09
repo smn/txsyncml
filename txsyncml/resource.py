@@ -11,6 +11,7 @@ from txsyncml.codecs import get_codec
 from txsyncml import constants
 from txsyncml.commands import (
     SyncML, SyncHdr, SyncBody, Target, Source, Status)
+from txsyncml.parser import SyncMLParser
 
 
 class TxSyncMLError(Exception):

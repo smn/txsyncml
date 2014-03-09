@@ -6,12 +6,11 @@ from txsyncml.tests.test_base import TxSyncMLTestCase
 class SyncMLParserTestCase(TxSyncMLTestCase):
 
     def setUp(self):
-        self.parser = SyncMLParser()
         self.fixtures = FixtureHelper()
 
     def test_header_parsing(self):
         data = self.fixtures.get_fixture('client_sync_init.xml')
-        doc = self.parser.parse(data)
+        doc = SyncMLParser.parse(data)
         [header] = doc.find('SyncHdr')
         [verdtd] = header.find('VerDTD')
         self.assertEqual(verdtd.value, '1.1')

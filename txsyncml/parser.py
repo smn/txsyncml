@@ -8,14 +8,16 @@ from txsyncml import commands
 class SyncMLParser(XMLParser):
 
     def __init__(self):
-        self.connectionMade()
         self.chain = []
         self.registry = []
         self.root = None
 
-    def parse(self, data):
-        self.dataReceived(data)
-        return self.root
+    @classmethod
+    def parse(cls, data):
+        parser = cls()
+        parser.connectionMade()
+        parser.dataReceived(data)
+        return parser.root
 
     def gotTagStart(self, tagname, attrs):
         klass = getattr(commands, tagname)
