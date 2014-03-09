@@ -1,2 +1,2 @@
 # Requirements to do development & run tests
-treq
+treq==0.2.0
