@@ -1,4 +1,6 @@
 language: python
+env:
+  - TXSYNCML_TEST_TIMEOUT=5
 python:
   - 2.6
   - 2.7
