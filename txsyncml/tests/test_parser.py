@@ -1,6 +1,6 @@
 from txsyncml.parser import SyncMLParser
-from txsyncml.tests.base import TxSyncMLTestCase
 from txsyncml.tests.helpers import FixtureHelper
+from txsyncml.tests.test_base import TxSyncMLTestCase
 
 
 class SyncMLParserTestCase(TxSyncMLTestCase):

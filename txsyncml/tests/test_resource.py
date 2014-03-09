@@ -10,8 +10,8 @@ from treq.client import HTTPClient
 from txsyncml import constants
 from txsyncml.codecs import XmlCodec, WbXmlCodec
 from txsyncml.resource import TxSyncMLResource
-from txsyncml.tests.base import TxSyncMLTestCase
 from txsyncml.tests.helpers import FixtureHelper, SyncMLClientHelper
+from txsyncml.tests.test_base import TxSyncMLTestCase
 
 
 class TxSyncMLTestCase(TxSyncMLTestCase):

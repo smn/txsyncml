@@ -4,7 +4,7 @@ from txsyncml import constants
 from txsyncml.commands import (
     SyncML, SyncHdr, Target, Source, Cred, Meta, SyncBody, Item, Alert,
     Anchor, Data, Status, Type)
-from txsyncml.tests.base import TxSyncMLTestCase
+from txsyncml.tests.test_base import TxSyncMLTestCase
 
 
 class SyncMLElementTestCase(TxSyncMLTestCase):

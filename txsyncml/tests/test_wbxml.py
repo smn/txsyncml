@@ -3,8 +3,8 @@ from twisted.web import microdom
 
 from txsyncml.codecs import WbXmlCodec
 from txsyncml.wbxml import wbxml2xml, xml2wbxml
-from txsyncml.tests.base import TxSyncMLTestCase
 from txsyncml.tests.helpers import FixtureHelper, SyncMLClientHelper
+from txsyncml.tests.test_base import TxSyncMLTestCase
 
 
 class WbXmlTestCase(TxSyncMLTestCase):
