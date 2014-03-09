@@ -1,13 +1,13 @@
 from twisted.internet.defer import inlineCallbacks
-from twisted.trial.unittest import TestCase
 from twisted.web import microdom
 
 from txsyncml.codecs import WbXmlCodec
 from txsyncml.wbxml import wbxml2xml, xml2wbxml
+from txsyncml.tests.base import TxSyncMLTestCase
 from txsyncml.tests.helpers import FixtureHelper, SyncMLClientHelper
 
 
-class WbXmlTestCase(TestCase):
+class WbXmlTestCase(TxSyncMLTestCase):
 
     def setUp(self):
         self.fixtures = FixtureHelper()

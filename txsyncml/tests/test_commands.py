@@ -1,14 +1,13 @@
 from base64 import b64encode
 
-from twisted.trial.unittest import TestCase
-
 from txsyncml import constants
 from txsyncml.commands import (
     SyncML, SyncHdr, Target, Source, Cred, Meta, SyncBody, Item, Alert,
     Anchor, Data, Status, Type)
+from txsyncml.tests.base import TxSyncMLTestCase
 
 
-class SyncMLElementTestCase(TestCase):
+class SyncMLElementTestCase(TxSyncMLTestCase):
 
     def assertXml(self, element, xml_str):
         self.assertEqual(element.to_xml(), xml_str)

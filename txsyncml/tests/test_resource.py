@@ -1,6 +1,5 @@
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
-from twisted.trial.unittest import TestCase
 from twisted.web.client import HTTPConnectionPool
 from twisted.web import http
 from twisted.web import server
@@ -11,10 +10,11 @@ from treq.client import HTTPClient
 from txsyncml import constants
 from txsyncml.codecs import XmlCodec, WbXmlCodec
 from txsyncml.resource import TxSyncMLResource
+from txsyncml.tests.base import TxSyncMLTestCase
 from txsyncml.tests.helpers import FixtureHelper, SyncMLClientHelper
 
 
-class TxSyncMLTestCase(TestCase):
+class TxSyncMLTestCase(TxSyncMLTestCase):
 
     timeout = 1
     content_type = 'application/vnd.syncml+xml'

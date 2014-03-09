@@ -1,10 +1,9 @@
-from twisted.trial.unittest import TestCase
-
 from txsyncml.parser import SyncMLParser
+from txsyncml.tests.base import TxSyncMLTestCase
 from txsyncml.tests.helpers import FixtureHelper
 
 
-class SyncMLParserTestCase(TestCase):
+class SyncMLParserTestCase(TxSyncMLTestCase):
 
     def setUp(self):
         self.parser = SyncMLParser()
