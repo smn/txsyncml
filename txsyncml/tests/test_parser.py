@@ -12,8 +12,8 @@ class SyncMLParserTestCase(TestCase):
 
     def test_header_parsing(self):
         data = self.fixtures.get_fixture('client_sync_init.xml')
-        result = self.parser.parse(data)
-        [header] = result.find('SyncHdr')
+        doc = self.parser.parse(data)
+        [header] = doc.find('SyncHdr')
         [verdtd] = header.find('VerDTD')
         self.assertEqual(verdtd.value, '1.1')
         [verproto] = header.find('VerProto')
