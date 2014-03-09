@@ -22,12 +22,14 @@ class WbXmlCodec(XmlCodec):
     content_type = 'application/vnd.syncml+wbxml'
 
     def encode(self, data):
-        if isinstance(data, unicode):
-            data = data.encode('utf-8')
-        return xml2wbxml(data)
+        d = super(WbXmlCodec, self).encode(data)
+        d.addCallback(xml2wbxml)
+        return d
 
     def decode(self, data):
-        return wbxml2xml(data)
+        d = wbxml2xml(data)
+        d.addCallback(super(WbXmlCodec, self).decode)
+        return d
 
 
 codecs = [
