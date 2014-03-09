@@ -27,6 +27,6 @@ class WbXmlTestCase(TestCase):
     def test_build_client_sync_init(self):
         codec = WbXmlCodec()
         syncml = self.client.build_request()
-        wbxml = yield codec.encode(syncml.toXml())
+        wbxml = yield codec.encode(syncml.build().toXml())
         expected_wbxml = self.fixtures.get_fixture('client_sync_init.wbxml')
         self.assertEqual(wbxml, expected_wbxml)
