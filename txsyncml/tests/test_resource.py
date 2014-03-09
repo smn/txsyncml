@@ -16,7 +16,6 @@ from txsyncml.tests.test_base import TxSyncMLTestCase
 
 class TxSyncMLTestCase(TxSyncMLTestCase):
 
-    timeout = 1
     content_type = 'application/vnd.syncml+xml'
     codec = XmlCodec
 
