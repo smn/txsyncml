@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-from twisted.trial.unittest import TestCase
 from twisted.internet.defer import inlineCallbacks
 from twisted.web import microdom
 
 from txsyncml.codecs import XmlCodec, WbXmlCodec
 from txsyncml.tests.helpers import FixtureHelper
+from txsyncml.tests.test_base import TxSyncMLTestCase
 
 
-class XmlCodecTestCase(TestCase):
+class XmlCodecTestCase(TxSyncMLTestCase):
 
     def setUp(self):
         self.codec = XmlCodec()
@@ -23,7 +23,7 @@ class XmlCodecTestCase(TestCase):
         self.assertEqual(byte_str, 'Zoe')
 
 
-class WbXmlCodecTestCase(TestCase):
+class WbXmlCodecTestCase(TxSyncMLTestCase):
 
     def setUp(self):
         self.codec = WbXmlCodec()
