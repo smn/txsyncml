@@ -5,5 +5,4 @@ mkdir build &&
 cd build &&
 cmake -DCMAKE_INSTALL_PREFIX=$prefix ../ &&
 make &&
-make test &&
 make install

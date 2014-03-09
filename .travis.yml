@@ -7,7 +7,7 @@ python:
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq cmake wget # needed to build libxml2 from source
-  - sh ./install-libwbxml-from-source.sh
+  - sudo ./install-libwbxml-from-source.sh
 install:
   - pip install coveralls --use-wheel
   - pip install -r requirements-dev.pip
