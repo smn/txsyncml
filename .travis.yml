@@ -7,7 +7,7 @@ before_install:
   - sudo apt-get install -qq libwbxml2-utils
 install:
   - pip install coveralls --use-wheel
-  - pin install -r requirements-dev.pip
+  - pip install -r requirements-dev.pip
   - pip install -e . --use-wheel
 script:
   - coverage run --source=txsyncml `which trial` txsyncml
