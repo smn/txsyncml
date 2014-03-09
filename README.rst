@@ -16,12 +16,29 @@ As per the docs (chapter 6.3)::
 Stages of a SyncML Session
 --------------------------
 
-- Pkg #1 init
-- Pkg #2 creds challenge or OK (authenticated for session)
-- Pkg #3 init finish, start of sync
-- Pkg #4 server status + sync from server
-- Pkg #5 client status
-- Pkg #6 map acks to client
+- Pkg #1 client initialization package
+- Pkg #2 server init package
+- Pkg #3 client modification
+- Pkg #4 server modifications
+- Pkg #5 mapping of data ids
+- Pkg #6 mapping status
+
+
+An initialization package generally contains the following information:
+
+- Device capabilities
+- Requested databases access, type of sync desired
+- Authentication information
+- Sync anchors
+
+A modification package generally contains the following information:
+
+- Synchronization commands: add, replace, delete, move ...
+- Data ids and contents associated with these commands (except for delete)
+
+A mapping package (only sent by client) generally contains the following information:
+
+- Mapping information (a couple of LUID and GUID for each new item added from server)
 
 
 |travis|_ |coveralls|_
