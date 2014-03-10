@@ -30,3 +30,9 @@ build:
         code: |
           echo "python version $(python --version) running"
           echo "pip version $(pip --version) running"
+
+deploy:
+  steps:
+      - script:
+          name: pypi deploy
+          code: sh ./deploy.sh
