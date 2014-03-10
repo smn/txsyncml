@@ -41,7 +41,7 @@ A mapping package (only sent by client) generally contains the following informa
 - Mapping information (a couple of LUID and GUID for each new item added from server)
 
 
-|travis|_ |coveralls|_
+|travis|_ |coveralls|_ |wercker|_
 
 
 ::
@@ -56,3 +56,6 @@ A mapping package (only sent by client) generally contains the following informa
 .. |coveralls| image:: https://coveralls.io/repos/smn/txsyncml/badge.png?branch=develop
 .. _coveralls: https://coveralls.io/r/smn/txsyncml
 
+
+.. |wercker| image:: https://app.wercker.com/status/e89fa2657c7708997ef036f687ff63ef/s/
+.. _wercker: https://app.wercker.com/project/bykey/e89fa2657c7708997ef036f687ff63ef
