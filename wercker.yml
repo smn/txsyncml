@@ -14,7 +14,7 @@ build:
     - script:
         name: install wbxml
         code: |
-            sudo ./install-libwbxml-from-source.sh
+            sudo sh ./install-libwbxml-from-source.sh
 
     - script:
         name: test
