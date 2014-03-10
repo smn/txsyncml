@@ -14,6 +14,8 @@ build:
     - script:
         name: install wbxml
         code: |
+            sudo apt-get update -qq
+            sudo apt-get install -qq cmake wget # needed to build libxml2 from source
             sudo sh ./install-libwbxml-from-source.sh
 
     - script:
