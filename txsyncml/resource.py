@@ -12,6 +12,7 @@ from txsyncml import constants
 from txsyncml.commands import (
     SyncML, SyncHdr, SyncBody, Target, Source, Status)
 from txsyncml.parser import SyncMLParser
+from txsyncml.syncml import SyncMLEngine
 
 
 class TxSyncMLError(Exception):
@@ -68,9 +69,7 @@ class TxSyncMLResource(Resource):
     def process_syncml(self, syncml, request):
         codec = self.get_codec(request)
 
-        doc = SyncMLParser.parse(syncml)
-        header = doc.get_header()
-        body = doc.get_body()
+        SyncMLEngine().process(SyncMLParser.parse(syncml))
 
         header = SyncHdr.create(
             1, 1,
@@ -83,7 +82,7 @@ class TxSyncMLResource(Resource):
                               source_ref='IMEI:493005100592800',
                               code=constants.AUTHENTICATION_ACCEPTED)])
         syncml = SyncML.create(header=header, body=body)
-        return codec.encode(syncml.build().toXml())
+        return codec.encode(syncml.to_xml())
 
     def finish_request(self, response, request):
         codec = self.get_codec(request)

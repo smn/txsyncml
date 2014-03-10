@@ -36,8 +36,9 @@ class SyncMLElement(object):
         return Element((self.ns, self.name))
 
     def build_children(self, element):
-        for child in self.children:
-            element.addChild(child.build())
+        for allowed_child in self.allowed_children:
+            for child in self.find(allowed_child):
+                element.addChild(child.build())
         return element
 
     def to_xml(self):
