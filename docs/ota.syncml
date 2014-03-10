@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wap-provisioningdoc>
+  <characteristic type="BOOTSTRAP">
+    <parm name="NAME" value="SYNCSETTINGS" />
+  </characteristic>
+  <characteristic type="APPLICATION">
+    <parm name="APPID" value="w5" />
+    <parm name="TO-NAPID" value="INTERNET" />
+    <parm name="NAME" value="SYNCSETTINGS" />
+    <parm name="ADDR" value="http://syncserver/sync" />
+    <characteristic type="RESOURCE">
+      <parm name="URI" value="pb" />
+      <parm name="NAME" value="Contacts DB" />
+      <parm name="AACCEPT" value="text/x-vcard" />
+    </characteristic>
+    <characteristic type="RESOURCE">
+      <parm name="URI" value="cal" />
+      <parm name="NAME" value="Calendar DB" />
+      <parm name="AACCEPT" value="text/x-vcalendar" />
+    </characteristic>
+    <characteristic type="RESOURCE">
+      <parm name="URI" value="notes" />
+      <parm name="NAME" value="Notes DB" />
+      <parm name="AACCEPT" value="text/plain" />
+    </characteristic>
+    <characteristic type="APPAUTH">
+      <parm name="AAUTHNAME" value="username" />
+      <parm name="AAUTHSECRET" value="password" />
+    </characteristic>
+  </characteristic>
+</wap-provisioningdoc>

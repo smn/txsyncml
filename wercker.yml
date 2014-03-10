@@ -1,0 +1,38 @@
+box: wercker/python
+# Build definition
+build:
+  # The steps that will be executed on build
+  steps:
+    # A step that sets up the python virtual environment
+    - virtualenv:
+        name: setup virtual environment
+        install_wheel: true
+
+    # A step that executes `pip install` command.
+    - pip-install
+
+    - script:
+        name: install wbxml
+        code: |
+            sudo apt-get update -qq
+            sudo apt-get install -qq cmake wget # needed to build libxml2 from source
+            sudo sh ./install-libwbxml-from-source.sh
+
+    - script:
+        name: test
+        code: |
+            trial txsyncml
+
+    # A custom script step, name value is used in the UI
+    # and the code value contains the command that get executed
+    - script:
+        name: echo python information
+        code: |
+          echo "python version $(python --version) running"
+          echo "pip version $(pip --version) running"
+
+deploy:
+  steps:
+      - script:
+          name: pypi deploy
+          code: sh ./deploy.sh
