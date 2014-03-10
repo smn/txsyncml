@@ -9,4 +9,4 @@ class SyncMLEngine(object):
 
     def process_body(self, body):
         print body
-        print body.get_alerts()
+        print body.find('Alert')
