@@ -12,6 +12,11 @@ build:
     - pip-install
 
     - script:
+        name: install wbxml
+        code: |
+            sudo ./install-libwbxml-from-source.sh
+
+    - script:
         name: test
         code: |
             trial txsyncml
