@@ -12,7 +12,7 @@ from txsyncml import constants
 from txsyncml.commands import (
     SyncML, SyncHdr, SyncBody, Target, Source, Status)
 from txsyncml.parser import SyncMLParser
-from txsyncml.syncml import SyncMLEngine
+from txsyncml.syncml import SyncMLEngine, UserState
 
 
 class TxSyncMLError(Exception):
@@ -69,7 +69,9 @@ class TxSyncMLResource(Resource):
     def process_syncml(self, syncml, request):
         codec = self.get_codec(request)
 
-        SyncMLEngine().process(SyncMLParser.parse(syncml))
+        state = UserState()
+        syncml_engine = SyncMLEngine(state)
+        syncml_engine.process(SyncMLParser.parse(syncml))
 
         header = SyncHdr.create(
             1, 1,
