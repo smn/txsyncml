@@ -160,9 +160,6 @@ class Cred(SyncMLElement):
         ])
 
     def decode_auth(self):
-        if hasattr(self, '_auth_cache'):
-            return getattr(self, '_auth_cache')
-
         [meta] = self.find('Meta')
         [type_] = meta.find('Type')
         [data] = self.find('Data')
@@ -173,8 +170,7 @@ class Cred(SyncMLElement):
             raise SyncMLError('Auth type %r is not supported.' % (
                 type_.value))
 
-        self._auth_cache = decoder(data.value)
-        return self._auth_cache
+        return decoder(data.value)
 
     @property
     def username(self):
