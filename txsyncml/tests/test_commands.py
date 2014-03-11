@@ -3,7 +3,7 @@ from base64 import b64encode
 from txsyncml import constants
 from txsyncml.commands import (
     SyncML, SyncHdr, Target, Source, Cred, Meta, SyncBody, Item, Alert,
-    Anchor, Data, Status, Type)
+    Anchor, Data, Status, Type, SyncMLError)
 from txsyncml.tests.test_base import TxSyncMLTestCase
 
 
@@ -48,6 +48,15 @@ class SyncMLElementTestCase(TxSyncMLTestCase):
             "</Meta>"
             "<Data>%s</Data>"
             "</Cred>" % (b64encode("foo:bar")))
+
+    def test_cred_properties(self):
+        cred = Cred.create('foo', 'bar', auth_type='syncml:auth-basic')
+        self.assertEqual(cred.username, 'foo')
+        self.assertEqual(cred.password, 'bar')
+
+    def test_cred_invalid_authtype(self):
+        cred = Cred.create('foo', 'bar', auth_type='foo')
+        self.assertRaises(SyncMLError, lambda: cred.username)
 
     def test_meta(self):
         meta = Meta.create([

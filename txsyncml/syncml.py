@@ -1,9 +1,17 @@
 # -*- test-case-name: txsyncml.tests.test_syncml -*-
 from twisted.python import log
+from twisted.internet.defer import succeed
 
 
 class SyncMLException(Exception):
     pass
+
+
+class AuthenticationBackend(object):
+
+    def authenticate(self, username, password):
+        log.msg('Authenticating: %r' % (username,))
+        return succeed(UserState())
 
 
 class UserState(object):

@@ -1,7 +1,7 @@
 # -*- test-case-name: txsyncml.tests.test_resource -*-
 
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import maybeDeferred
 from twisted.python import log
 from twisted.web.resource import Resource
 from twisted.web import http
@@ -12,7 +12,7 @@ from txsyncml import constants
 from txsyncml.commands import (
     SyncML, SyncHdr, SyncBody, Target, Source, Status)
 from txsyncml.parser import SyncMLParser
-from txsyncml.syncml import SyncMLEngine, UserState
+from txsyncml.syncml import SyncMLEngine, UserState, AuthenticationBackend
 
 
 class TxSyncMLError(Exception):
@@ -37,12 +37,17 @@ class TxSyncMLResource(Resource):
         self.reactor = reactor
 
     def render_POST(self, request):
-        d = Deferred()
-        d.addCallback(self.handle_request)
-        d.addCallback(self.process_syncml, request)
-        d.addCallback(self.finish_request, request)
+        d = maybeDeferred(self.get_codec, request)
+        d.addCallback(self.handle_request, request)
         d.addErrback(self.handle_request_error, request)
-        reactor.callLater(0, d.callback, request)
+        return NOT_DONE_YET
+
+    def handle_request(self, codec, request):
+        d = self.decode_request(request, codec)
+        d.addCallback(self.process_syncml, request)
+        d.addCallback(self.encode_response, codec)
+        d.addCallback(self.finish_request, request, codec.content_type)
+        d.addErrback(self.handle_request_error, request)
         return NOT_DONE_YET
 
     def handle_request_error(self, failure, request):
@@ -51,8 +56,8 @@ class TxSyncMLResource(Resource):
             log.err(failure)
             error = TxSyncMLError(message='Internal server error.')
 
-        request.setHeader('Content-Type', 'text/plain')
         request.setResponseCode(error.code)
+        request.setHeader('Content-Type', 'text/plain')
         request.write(error.message)
         request.finish()
 
@@ -62,16 +67,35 @@ class TxSyncMLResource(Resource):
             raise ContentTypeError()
         return codec
 
-    def handle_request(self, request):
-        codec = self.get_codec(request)
-        return codec.decode(request.content.read())
+    def decode_request(self, request, codec):
+        d = codec.decode(request.content.read())
+        d.addCallback(SyncMLParser.parse)
+        return d
 
-    def process_syncml(self, syncml, request):
-        codec = self.get_codec(request)
+    def encode_response(self, doc, codec):
+        return codec.encode(doc.to_xml())
 
-        state = UserState()
-        syncml_engine = SyncMLEngine(state)
-        syncml_engine.process(SyncMLParser.parse(syncml))
+    def finish_request(self, response, request, content_type):
+        request.setHeader('Content-Type', content_type)
+        request.write(response)
+        request.finish()
+
+    def authenticate_request(self, doc):
+        header = doc.get_header()
+        [cred] = header.find('Cred')
+
+        auth = AuthenticationBackend()
+        return auth.authenticate(cred.username, cred.password)
+
+    def process_syncml(self, doc, request):
+        d = self.authenticate_request(doc)
+        d.addCallback(self.handle_authorized_syncml, doc)
+        d.addErrback(self.handle_unauthorized_syncml, doc)
+        return d
+
+    def handle_authorized_syncml(self, user_state, doc):
+        syncml_engine = SyncMLEngine(user_state)
+        syncml_engine.process(doc)
 
         header = SyncHdr.create(
             1, 1,
@@ -83,11 +107,7 @@ class TxSyncMLResource(Resource):
                               target_ref='http://www.syncml.org/sync-server',
                               source_ref='IMEI:493005100592800',
                               code=constants.AUTHENTICATION_ACCEPTED)])
-        syncml = SyncML.create(header=header, body=body)
-        return codec.encode(syncml.to_xml())
+        return SyncML.create(header=header, body=body)
 
-    def finish_request(self, response, request):
-        codec = self.get_codec(request)
-        request.setHeader('Content-Type', codec.content_type)
-        request.write(response)
-        request.finish()
+    def handle_unauthorized_syncml(self, failure):
+        return ''

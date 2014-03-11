@@ -148,6 +148,9 @@ class Data(SyncMLElement):
 class Cred(SyncMLElement):
 
     allowed_children = [Meta, Data]
+    auth_decoders = {
+        'syncml:auth-basic': lambda d: base64.b64decode(d).split(':'),
+    }
 
     @classmethod
     def create(cls, username, password, auth_type='syncml:auth-basic'):
@@ -155,6 +158,33 @@ class Cred(SyncMLElement):
             Meta.create([Type.create(auth_type)]),
             Data.create(base64.b64encode('%s:%s' % (username, password)))
         ])
+
+    def decode_auth(self):
+        if hasattr(self, '_auth_cache'):
+            return getattr(self, '_auth_cache')
+
+        [meta] = self.find('Meta')
+        [type_] = meta.find('Type')
+        [data] = self.find('Data')
+
+        decoder = self.auth_decoders.get(type_.value)
+
+        if decoder is None:
+            raise SyncMLError('Auth type %r is not supported.' % (
+                type_.value))
+
+        self._auth_cache = decoder(data.value)
+        return self._auth_cache
+
+    @property
+    def username(self):
+        auth = self.decode_auth()
+        return auth[0]
+
+    @property
+    def password(self):
+        auth = self.decode_auth()
+        return auth[1]
 
 
 class VerDTD(SyncMLElement):
