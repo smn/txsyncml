@@ -110,4 +110,4 @@ class TxSyncMLResource(Resource):
         return SyncML.create(header=header, body=body)
 
     def handle_unauthorized_syncml(self, failure):
-        return ''
+        raise NotImplementedError('Not implemented yet')
