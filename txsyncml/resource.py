@@ -1,7 +1,7 @@
 # -*- test-case-name: txsyncml.tests.test_resource -*-
 
 from twisted.internet import reactor
-from twisted.internet.defer import maybeDeferred
+from twisted.internet.defer import maybeDeferred, Deferred
 from twisted.python import log
 from twisted.web.resource import Resource
 from twisted.web import http
@@ -76,8 +76,7 @@ class TxSyncMLResource(Resource):
         d = codec.decode(content)
 
         def cb(xml):
-            for line in xml.split('\n'):
-                log.msg(line)
+            print 'xml! -->%r<--' % (xml,)
             return xml
 
         d.addCallback(cb)

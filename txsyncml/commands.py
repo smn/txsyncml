@@ -129,15 +129,6 @@ class MaxMsgSize(SyncMLElement):
         return cls('MaxMsgSize', unicode(value), ns='syncml:metinf')
 
 
-class Meta(SyncMLElement):
-
-    allowed_children = [Type, Anchor, MaxMsgSize]
-
-    @classmethod
-    def create(cls, children=[]):
-        return cls('Meta', None, children=children)
-
-
 class VerDTD(SyncMLElement):
 
     @classmethod
@@ -214,10 +205,15 @@ Property = oneof('Property', [
     PropParam,
     ValEnum
 ])
+Size = oneof('Size')
 CTCap = oneof('CTCap', [
     CTType,
     VerCT,
     Property,
+    PropName,
+    Size,
+    ParamName,
+    ValEnum,
 ])
 
 SupportLargeObjs = oneof('SupportLargeObjs')
@@ -239,6 +235,27 @@ DataStore = oneof('DataStore', [
     SyncCap,
 ])
 
+MaxObjSize = oneof('MaxObjSize')
+
+FreeMem = oneof('FreeMem')
+FreeID = oneof('FreeID')
+
+Mem = oneof('Mem', [
+    FreeMem,
+    FreeID,
+])
+
+Final = oneof('Final')
+
+
+class Meta(SyncMLElement):
+
+    allowed_children = [Type, Anchor, MaxMsgSize, MaxObjSize, Mem]
+
+    @classmethod
+    def create(cls, children=[]):
+        return cls('Meta', None, children=children)
+
 
 class DevInf(SyncMLElement):
 
@@ -254,6 +271,7 @@ class DevInf(SyncMLElement):
         UTC,
         SupportLargeObjs,
         DataStore,
+        CTCap,
     ]
 
 
@@ -362,7 +380,7 @@ class CmdID(SyncMLElement):
 
 class Item(SyncMLElement):
 
-    allowed_children = [Target, Source, Meta]
+    allowed_children = [Target, Source, Meta, Data]
 
     @classmethod
     def create(cls, target, source, anchor):
@@ -442,7 +460,7 @@ class Put(SyncMLElement):
 
 class SyncBody(SyncMLElement):
 
-    allowed_children = [Alert, Meta, Status]
+    allowed_children = [Alert, Meta, Status, Put, Final]
 
     @classmethod
     def create(cls, alerts=[], statuses=[]):

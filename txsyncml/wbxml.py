@@ -19,14 +19,18 @@ class WbXmlProcessProtocol(protocol.ProcessProtocol):
     def __init__(self, data, deferred):
         self.data = data
         self.deferred = deferred
+        self.buffer = b''
 
     def connectionMade(self):
         self.transport.write(self.data)
         self.transport.closeStdin()
 
     def outReceived(self, data):
-        self.deferred.callback(data)
+        self.buffer += data
+
+    def outConnectionLost(self):
         self.transport.loseConnection()
+        self.deferred.callback(self.buffer)
 
 
 def xml2wbxml(xml, version='1.2'):
