@@ -17,7 +17,7 @@ from txsyncml.syncml import SyncMLEngine, UserState, AuthenticationBackend
 
 class TxSyncMLError(Exception):
 
-    def __init__(self, message, code):
+    def __init__(self, message, code=http.INTERNAL_SERVER_ERROR):
         self.message = message
         self.code = code
 
@@ -68,7 +68,19 @@ class TxSyncMLResource(Resource):
         return codec
 
     def decode_request(self, request, codec):
-        d = codec.decode(request.content.read())
+        content = request.content.read()
+
+        with open('request.wbxml', 'wb') as fp:
+            fp.write(content)
+
+        d = codec.decode(content)
+
+        def cb(xml):
+            for line in xml.split('\n'):
+                log.msg(line)
+            return xml
+
+        d.addCallback(cb)
         d.addCallback(SyncMLParser.parse)
         return d
 

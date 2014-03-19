@@ -138,7 +138,130 @@ class Meta(SyncMLElement):
         return cls('Meta', None, children=children)
 
 
+class VerDTD(SyncMLElement):
+
+    @classmethod
+    def create(cls, value):
+        return cls('VerDTD', unicode(value))
+
+
+class TargetRef(SyncMLElement):
+
+    @classmethod
+    def create(cls, value):
+        return cls('TargetRef', unicode(value))
+
+
+class SourceRef(SyncMLElement):
+
+    @classmethod
+    def create(cls, value):
+        return cls('SourceRef', unicode(value))
+
+
+def oneof(name, allowed_children=[]):
+    return type(name, (SyncMLElement,), {
+        'allowed_children': allowed_children
+    })
+
+Man = oneof('Man')
+Mod = oneof('Mod')
+FwV = oneof('FwV')
+SwV = oneof('SwV')
+HwV = oneof('HwV')
+DevID = oneof('DevID')
+DevTyp = oneof('DevTyp')
+UTC = oneof('UTC')
+DisplayName = oneof('DisplayName')
+MaxGUIDSize = oneof('MaxGUIDSize')
+CTType = oneof('CTType')
+VerCT = oneof('VerCT')
+Rx_Pref = oneof('Rx-Pref', [
+    CTType,
+    VerCT
+])
+Tx_Pref = oneof('Tx-Pref', [
+    CTType,
+    VerCT
+])
+Rx = oneof('Rx', [
+    CTType,
+    VerCT
+])
+Tx = oneof('Tx', [
+    CTType,
+    VerCT
+])
+PropName = oneof('PropName')
+MaxSize = oneof('MaxSize')
+ParamName = oneof('ParamName')
+ValEnum = oneof('ValEnum')
+MaxOccur = oneof('MaxOccur')
+NoTruncate = oneof('NoTruncate')
+PropParam = oneof('PropParam', [
+    ParamName,
+    ValEnum,
+])
+MaxID = oneof('MaxID')
+DSMem = oneof('DSMem', [
+    MaxID,
+])
+Property = oneof('Property', [
+    PropName,
+    MaxSize,
+    MaxOccur,
+    NoTruncate,
+    PropParam,
+    ValEnum
+])
+CTCap = oneof('CTCap', [
+    CTType,
+    VerCT,
+    Property,
+])
+
+SupportLargeObjs = oneof('SupportLargeObjs')
+SyncType = oneof('SyncType')
+SyncCap = oneof('SyncCap', [
+    SyncType
+])
+
+DataStore = oneof('DataStore', [
+    SourceRef,
+    DisplayName,
+    MaxGUIDSize,
+    Rx_Pref,
+    Rx,
+    Tx_Pref,
+    Tx,
+    CTCap,
+    DSMem,
+    SyncCap,
+])
+
+
+class DevInf(SyncMLElement):
+
+    allowed_children = [
+        VerDTD,
+        Man,
+        Mod,
+        FwV,
+        SwV,
+        HwV,
+        DevID,
+        DevTyp,
+        UTC,
+        SupportLargeObjs,
+        DataStore,
+    ]
+
+
 class Data(SyncMLElement):
+
+    allowed_children = [
+        DevInf,
+    ]
 
     @classmethod
     def create(cls, content):
@@ -181,13 +304,6 @@ class Cred(SyncMLElement):
     def password(self):
         auth = self.decode_auth()
         return auth[1]
-
-
-class VerDTD(SyncMLElement):
-
-    @classmethod
-    def create(cls, value):
-        return cls('VerDTD', unicode(value))
 
 
 class VerProto(SyncMLElement):
@@ -289,20 +405,6 @@ class Cmd(SyncMLElement):
         return cls('Cmd', unicode(value))
 
 
-class TargetRef(SyncMLElement):
-
-    @classmethod
-    def create(cls, value):
-        return cls('TargetRef', unicode(value))
-
-
-class SourceRef(SyncMLElement):
-
-    @classmethod
-    def create(cls, value):
-        return cls('SourceRef', unicode(value))
-
-
 class Status(SyncMLElement):
 
     allowed_children = [
@@ -327,6 +429,15 @@ class Status(SyncMLElement):
             SourceRef.create(source_ref),
             Data.create(code),
         ])
+
+
+class Put(SyncMLElement):
+
+    allowed_children = [
+        CmdID,
+        Meta,
+        Item,
+    ]
 
 
 class SyncBody(SyncMLElement):

@@ -5,6 +5,10 @@ from twisted.web.sux import XMLParser
 from txsyncml import commands
 
 
+class SyncMLParserException(Exception):
+    pass
+
+
 class SyncMLParser(XMLParser):
 
     def __init__(self):
@@ -20,7 +24,12 @@ class SyncMLParser(XMLParser):
         return parser.root
 
     def gotTagStart(self, tagname, attrs):
-        klass = getattr(commands, tagname)
+        # some class names have hyphens
+        tagname = tagname.replace('-', '_')
+        try:
+            klass = getattr(commands, tagname)
+        except AttributeError:
+            klass = commands.oneof(tagname)
         self.chain.append(klass(tagname, None))
 
     def gotText(self, text):
@@ -35,6 +44,11 @@ class SyncMLParser(XMLParser):
         element = self.chain.pop()
         if self.chain:
             parent = self.chain[-1]
-            parent.add_child(element)
+            try:
+                parent.add_child(element)
+            except commands.SyncMLError:
+                print 'forcing', element.__class__, 'under', parent.__class__
+                parent.allowed_children.append(element.__class__)
+                parent.add_child(element)
         else:
             self.root = element
