@@ -1,5 +1,6 @@
 # -*- test-case-name: txsyncml.tests.test_commands -*-
-import base64
+from base64 import b64encode
+from hashlib import md5
 
 from twisted.words.xish.domish import Element
 
@@ -49,6 +50,17 @@ class SyncMLElement(object):
             child_name = child_name.__name__
         return [child for child in self.children if child.name == child_name]
 
+    def get(self, element_name, default=None):
+        elements = self.find(element_name)
+        if not elements:
+            return default
+
+        [element] = elements
+        return element.value
+
+    def has(self, prop_name):
+        return len(self.find(prop_name)) > 0
+
 
 class SessionID(SyncMLElement):
 
@@ -71,6 +83,13 @@ class LocURI(SyncMLElement):
         return cls('LocURI', unicode(loc_uri))
 
 
+class LocName(SyncMLElement):
+
+    @classmethod
+    def create(cls, loc_name):
+        return cls('LocName', unicode(loc_name))
+
+
 class Target(SyncMLElement):
 
     allowed_children = [LocURI]
@@ -79,14 +98,24 @@ class Target(SyncMLElement):
     def create(cls, loc_uri):
         return cls('Target', None, children=[LocURI.create(loc_uri)])
 
+    @property
+    def loc_uri(self):
+        [loc_uri] = self.find('LocURI')
+        return loc_uri.value
+
 
 class Source(SyncMLElement):
 
-    allowed_children = [LocURI]
+    allowed_children = [LocURI, LocName]
 
     @classmethod
     def create(cls, loc_uri):
         return cls('Source', None, children=[LocURI.create(loc_uri)])
+
+    @property
+    def loc_uri(self):
+        [loc_uri] = self.find('LocURI')
+        return loc_uri.value
 
 
 class Type(SyncMLElement):
@@ -129,39 +158,427 @@ class MaxMsgSize(SyncMLElement):
         return cls('MaxMsgSize', unicode(value), ns='syncml:metinf')
 
 
+class VerDTD(SyncMLElement):
+
+    @classmethod
+    def create(cls, value):
+        return cls('VerDTD', unicode(value))
+
+
+class TargetRef(SyncMLElement):
+
+    @classmethod
+    def create(cls, value):
+        return cls('TargetRef', unicode(value))
+
+
+class SourceRef(SyncMLElement):
+
+    @classmethod
+    def create(cls, value):
+        return cls('SourceRef', unicode(value))
+
+
+def oneof(name, allowed_children=[]):
+    return type(name, (SyncMLElement,), {
+        'allowed_children': allowed_children
+    })
+
+Man = oneof('Man')
+Mod = oneof('Mod')
+FwV = oneof('FwV')
+SwV = oneof('SwV')
+HwV = oneof('HwV')
+DevID = oneof('DevID')
+DevTyp = oneof('DevTyp')
+UTC = oneof('UTC')
+DisplayName = oneof('DisplayName')
+MaxGUIDSize = oneof('MaxGUIDSize')
+CTType = oneof('CTType')
+VerCT = oneof('VerCT')
+
+
+class Rx(SyncMLElement):
+
+    allowed_children = (
+        CTType,
+        VerCT,
+    )
+
+    @property
+    def type(self):
+        return self.get('CTType')
+
+    @property
+    def version(self):
+        return self.get('VerCT')
+
+
+class Rx_Pref(Rx):
+    pass
+
+
+class Tx(Rx):
+    pass
+
+
+class Tx_Pref(Tx):
+    pass
+
+PropName = oneof('PropName')
+MaxSize = oneof('MaxSize')
+ParamName = oneof('ParamName')
+ValEnum = oneof('ValEnum')
+MaxOccur = oneof('MaxOccur')
+NoTruncate = oneof('NoTruncate')
+
+
+class PropParam(SyncMLElement):
+
+    allowed_children = (
+        ParamName,
+        ValEnum,
+    )
+
+    @property
+    def param_name(self):
+        return self.get('ParamName')
+
+    @property
+    def enums(self):
+        return [enum.value for enum in self.find('ValEnum')]
+
+
+MaxID = oneof('MaxID')
+
+
+class DSMem(SyncMLElement):
+
+    allowed_children = (
+        MaxID,
+    )
+
+    @property
+    def max_id(self):
+        return self.get('MaxID')
+
+
+class Property(SyncMLElement):
+
+    allowed_children = (
+        PropName,
+        MaxSize,
+        MaxOccur,
+        NoTruncate,
+        PropParam,
+        ValEnum,
+    )
+
+    @property
+    def prop_name(self):
+        return self.get('PropName')
+
+    @property
+    def max_size(self):
+        return self.get('MaxSize')
+
+    @property
+    def max_occur(self):
+        return self.get('MaxOccur')
+
+    @property
+    def no_truncate(self):
+        if self.has('NoTruncate'):
+            return True
+
+    @property
+    def params(self):
+        return self.find('PropParam')
+
+    @property
+    def enums(self):
+        enums = self.find('ValEnum')
+        if enums:
+            return [enum.value for enum in enums]
+
+
+Size = oneof('Size')
+
+
+class CTCap(SyncMLElement):
+
+    allowed_children = (
+        CTType,
+        VerCT,
+        Property,
+        Size,
+        ParamName,
+        ValEnum,
+    )
+
+    @property
+    def type(self):
+        return self.get('CTType')
+
+    @property
+    def version(self):
+        return self.get('VerCT')
+
+    @property
+    def properties(self):
+        return self.find('Property')
+
+    def get_property(self, prop_name):
+        for prop in self.properties:
+            if prop.prop_name == prop_name:
+                return prop
+
+
+SupportLargeObjs = oneof('SupportLargeObjs')
+SyncType = oneof('SyncType')
+SyncCap = oneof('SyncCap', [
+    SyncType
+])
+
+MaxObjSize = oneof('MaxObjSize')
+
+FreeMem = oneof('FreeMem')
+FreeID = oneof('FreeID')
+
+Mem = oneof('Mem', [
+    FreeMem,
+    FreeID,
+])
+
+Final = oneof('Final')
+
+
+class DataStore(SyncMLElement):
+
+    allowed_children = [
+        SourceRef,
+        DisplayName,
+        MaxGUIDSize,
+        Rx_Pref,
+        Rx,
+        Tx_Pref,
+        Tx,
+        CTCap,
+        DSMem,
+        SyncCap,
+    ]
+
+    @property
+    def source_ref(self):
+        return self.get('SourceRef')
+
+    @property
+    def display_name(self):
+        return self.get('DisplayName')
+
+    @property
+    def max_guid_size(self):
+        return self.get('MaxGUIDSize')
+
+    @property
+    def rx_preferred(self):
+        [rx_pref] = self.find('Rx_Pref')
+        return rx_pref
+
+    @property
+    def rx(self):
+        return self.find('Rx_Pref') + self.find('Rx')
+
+    @property
+    def tx_preferred(self):
+        [tx_pref] = self.find('Tx_Pref')
+        return tx_pref
+
+    @property
+    def tx(self):
+        return self.find('Tx_Pref') + self.find('Tx')
+
+    def get_capabilities(self, cttype):
+        for cap in self.find('CTCap'):
+            if cap.type == cttype:
+                return cap
+
+    @property
+    def ds_mem(self):
+        [ds_mem] = self.find('DSMem')
+        return ds_mem
+
+    @property
+    def sync_capabilities(self):
+        if not self.has('SyncCap'):
+            return []
+
+        [sync_cap] = self.find('SyncCap')
+        return [int(sync_type.value)
+                for sync_type in sync_cap.find('SyncType')]
+
+
+class Format(SyncMLElement):
+
+    @classmethod
+    def create(cls, format_type):
+        return cls('Format', format_type, ns='syncml:metinf')
+
+
+class NextNonce(SyncMLElement):
+
+    @classmethod
+    def create(cls, nonce):
+        return cls('NextNonce', nonce.encode('base64'), ns='syncml:metinf')
+
+
 class Meta(SyncMLElement):
 
-    allowed_children = [Type, Anchor, MaxMsgSize]
+    allowed_children = [Type, Anchor, MaxMsgSize, MaxObjSize, Mem, Format,
+                        NextNonce]
 
     @classmethod
     def create(cls, children=[]):
         return cls('Meta', None, children=children)
 
+    @property
+    def type(self):
+        return self.get('Type')
+
+    @property
+    def max_object_size(self):
+        return self.get('MaxObjSize')
+
+
+class DevInf(SyncMLElement):
+
+    allowed_children = [
+        VerDTD,
+        Man,
+        Mod,
+        FwV,
+        SwV,
+        HwV,
+        DevID,
+        DevTyp,
+        UTC,
+        SupportLargeObjs,
+        DataStore,
+        CTCap,
+    ]
+
+    @property
+    def ver_dtd(self):
+        return self.get('VerDTD')
+
+    @property
+    def manufacturer(self):
+        return self.get('Man')
+
+    @property
+    def model(self):
+        return self.get('Mod')
+
+    @property
+    def firmware_version(self):
+        return self.get('FwV')
+
+    @property
+    def software_version(self):
+        return self.get('SwV')
+
+    @property
+    def hardware_version(self):
+        return self.get('HwV')
+
+    @property
+    def device_id(self):
+        return self.get('DevID')
+
+    @property
+    def device_type(self):
+        return self.get('DevTyp')
+
+    @property
+    def supports_utc(self):
+        return self.has('UTC')
+
+    @property
+    def supports_large_objects(self):
+        return self.has('SupportLargeObjs')
+
+    @property
+    def datastores(self):
+        return self.find('DataStore')
+
+    def get_datastore(self, name):
+        for ds in self.find('DataStore'):
+            if ds.source_ref == name:
+                return ds
+
 
 class Data(SyncMLElement):
+
+    allowed_children = [
+        DevInf,
+    ]
 
     @classmethod
     def create(cls, content):
         return cls('Data', unicode(content))
 
 
+def md5digest(m):
+    return md5(m).digest()
+
+
+def md5_cred_hasher(username, password, nonce):
+    return b64encode(
+        md5digest(
+            '%s:%s' % (
+                b64encode(
+                    md5digest('%s:%s' % (username, password))
+                ), nonce))
+    ).strip()
+
+
+def base64_cred_hasher(username, password, nonce=None):
+    # NOTE: Nonce is not used for base64 hashes
+    return ('%s:%s' % (username, password)).encode('base64').strip()
+
+
 class Cred(SyncMLElement):
 
     allowed_children = [Meta, Data]
+    auth_type_encoders = {
+        'syncml:auth-basic': base64_cred_hasher,
+        'syncml:auth-md5': md5_cred_hasher,
+    }
 
     @classmethod
-    def create(cls, username, password, auth_type='syncml:auth-basic'):
+    def create(cls, username, password, nonce=None,
+               auth_type='syncml:auth-basic', format='b64'):
+        if auth_type not in cls.auth_type_encoders:
+            raise SyncMLError('Unsupported Cred auth type: %r' % (
+                auth_type,))
+        encoder = cls.auth_type_encoders[auth_type]
         return cls('Cred', None, children=[
-            Meta.create([Type.create(auth_type)]),
-            Data.create(base64.b64encode('%s:%s' % (username, password)))
+            Meta.create([
+                Type.create(auth_type),
+                Format.create(format)]),
+            Data.create(encoder(username, password, nonce))
         ])
 
+    @property
+    def type(self):
+        [meta] = self.find('Meta')
+        [type_] = meta.find('Type')
+        return type_.value
 
-class VerDTD(SyncMLElement):
-
-    @classmethod
-    def create(cls, value):
-        return cls('VerDTD', unicode(value))
+    @property
+    def data(self):
+        [data] = self.find('Data')
+        return data.value
 
 
 class VerProto(SyncMLElement):
@@ -210,6 +627,26 @@ class SyncHdr(SyncMLElement):
 
         return cls('SyncHdr', None, children=children)
 
+    @property
+    def session_id(self):
+        [session_id] = self.find('SessionID')
+        return session_id.value
+
+    @property
+    def msg_id(self):
+        [msg_id] = self.find('MsgID')
+        return msg_id.value
+
+    @property
+    def target(self):
+        [target] = self.find('Target')
+        return target
+
+    @property
+    def source(self):
+        [source] = self.find('Source')
+        return source
+
 
 class CmdID(SyncMLElement):
 
@@ -220,7 +657,7 @@ class CmdID(SyncMLElement):
 
 class Item(SyncMLElement):
 
-    allowed_children = [Target, Source, Meta]
+    allowed_children = [Target, Source, Meta, Data]
 
     @classmethod
     def create(cls, target, source, anchor):
@@ -263,18 +700,19 @@ class Cmd(SyncMLElement):
         return cls('Cmd', unicode(value))
 
 
-class TargetRef(SyncMLElement):
+class Chal(SyncMLElement):
+
+    allowed_children = [Meta]
 
     @classmethod
-    def create(cls, value):
-        return cls('TargetRef', unicode(value))
-
-
-class SourceRef(SyncMLElement):
-
-    @classmethod
-    def create(cls, value):
-        return cls('SourceRef', unicode(value))
+    def create(cls, nonce, auth_type='syncml:auth-md5'):
+        return cls('Chal', None, children=[
+            Meta.create([
+                Type.create(auth_type),
+                Format.create('b64'),
+                NextNonce.create(nonce),
+            ])
+        ])
 
 
 class Status(SyncMLElement):
@@ -286,13 +724,14 @@ class Status(SyncMLElement):
         Cmd,
         TargetRef,
         SourceRef,
+        Chal,
         Data,
     ]
 
     @classmethod
     def create(cls, cmd_id, msg_ref, cmd_ref, cmd,
-               target_ref, source_ref, code):
-        return cls('Status', None, children=[
+               target_ref, source_ref, code, chal=None):
+        children = [
             CmdID.create(cmd_id),
             MsgRef.create(msg_ref),
             CmdRef.create(cmd_ref),
@@ -300,16 +739,49 @@ class Status(SyncMLElement):
             TargetRef.create(target_ref),
             SourceRef.create(source_ref),
             Data.create(code),
-        ])
+        ]
+        if chal:
+            children.append(chal)
+        return cls('Status', None, children=children)
+
+
+class Put(SyncMLElement):
+
+    allowed_children = [
+        CmdID,
+        Meta,
+        Item,
+    ]
 
 
 class SyncBody(SyncMLElement):
 
-    allowed_children = [Alert, Meta, Status]
+    allowed_children = [Alert, Meta, Status, Put, Final]
+
+    def __init__(self, *args, **kwargs):
+        super(SyncBody, self).__init__(*args, **kwargs)
+        self.devinf = None
 
     @classmethod
     def create(cls, alerts=[], statuses=[]):
         return cls('SyncBody', None, children=(alerts + statuses))
+
+    def get_devinf(self):
+        # Lookup cache
+        if self.devinf is not None:
+            return self.devinf
+
+        puts = self.find('Put')
+        for put in puts:
+            [meta] = put.find('Meta')
+            if 'devinf' in meta.type:
+                [item] = put.find('Item')
+                [source] = item.find('Source')
+                [data] = item.find('Data')
+                [devinf] = data.find('DevInf')
+                # Cache
+                self.devinf = devinf
+                return self.devinf
 
 
 class SyncML(SyncMLElement):
@@ -320,8 +792,10 @@ class SyncML(SyncMLElement):
     def create(cls, header=None, body=None):
         return cls('SyncML', None, children=filter(None, [header, body]))
 
-    def get_header(self):
+    @property
+    def header(self):
         return self.find(SyncHdr)[0]
 
-    def get_body(self):
+    @property
+    def body(self):
         return self.find(SyncBody)[0]

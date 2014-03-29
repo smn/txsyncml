@@ -3,11 +3,11 @@ from base64 import b64encode
 from txsyncml import constants
 from txsyncml.commands import (
     SyncML, SyncHdr, Target, Source, Cred, Meta, SyncBody, Item, Alert,
-    Anchor, Data, Status, Type)
+    Anchor, Data, Status, Type, SyncMLError)
 from txsyncml.tests.test_base import TxSyncMLTestCase
 
 
-class SyncMLElementTestCase(TxSyncMLTestCase):
+class TestCreateSyncMLElement(TxSyncMLTestCase):
 
     def assertXml(self, element, xml_str):
         self.assertEqual(element.to_xml(), xml_str)
@@ -41,13 +41,23 @@ class SyncMLElementTestCase(TxSyncMLTestCase):
 
     def test_cred(self):
         self.assertXml(
-            Cred.create('foo', 'bar', auth_type='some-algorithm'),
+            Cred.create('foo', 'bar', auth_type='syncml:auth-basic'),
             "<Cred>"
             "<Meta>"
-            "<Type xmlns='syncml:metinf'>some-algorithm</Type>"
+            "<Type xmlns='syncml:metinf'>syncml:auth-basic</Type>"
+            "<Format xmlns='syncml:metinf'>b64</Format>"
             "</Meta>"
             "<Data>%s</Data>"
             "</Cred>" % (b64encode("foo:bar")))
+
+    def test_cred_properties(self):
+        cred = Cred.create('foo', 'bar', auth_type='syncml:auth-basic')
+        self.assertEqual(cred.type, 'syncml:auth-basic')
+        self.assertEqual(cred.data, 'foo:bar'.encode('base64').strip())
+
+    def test_cred_invalid_authtype(self):
+        self.assertRaises(
+            SyncMLError, Cred.create, 'foo', 'bar', auth_type='foo')
 
     def test_meta(self):
         meta = Meta.create([
