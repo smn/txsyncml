@@ -1,6 +1,7 @@
 from txsyncml.parser import SyncMLParser
 from txsyncml.tests.helpers import FixtureHelper
 from txsyncml.tests.test_base import TxSyncMLTestCase
+from txsyncml import constants
 
 
 class SyncMLParserTestCase(TxSyncMLTestCase):
@@ -90,7 +91,13 @@ class ContactDataStoreTestCase(TxSyncMLTestCase):
         doc = SyncMLParser.parse(data)
         devinf = doc.body.get_devinf()
         ds = devinf.get_datastore('Contacts')
-        self.assertEqual(ds.sync_capabilities, [1, 2, 4, 6, 7])
+        self.assertEqual(ds.sync_capabilities, [
+            constants.SYNC_CAP_TWO_WAY,
+            constants.SYNC_CAP_SLOW_SYNC,
+            constants.SYNC_CAP_REFRESH_FROM_CLIENT,
+            constants.SYNC_CAP_REFRESH_FROM_SERVER,
+            constants.SYNC_CAP_SERVER_ALERTED_SYNC,
+        ])
 
 
 class VCard21ParserTestCase(TxSyncMLTestCase):
