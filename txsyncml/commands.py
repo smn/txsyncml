@@ -429,7 +429,8 @@ class NextNonce(SyncMLElement):
 
     @classmethod
     def create(cls, nonce):
-        return cls('NextNonce', nonce.encode('base64'), ns='syncml:metinf')
+        return cls(
+            'NextNonce', nonce.encode('base64').strip(), ns='syncml:metinf')
 
 
 class Meta(SyncMLElement):

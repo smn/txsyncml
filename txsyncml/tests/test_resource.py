@@ -1,3 +1,5 @@
+from xml.dom import minidom
+
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 from twisted.web.client import HTTPConnectionPool
@@ -12,6 +14,13 @@ from txsyncml.codecs import XmlCodec, WbXmlCodec
 from txsyncml.resource import TxSyncMLResource
 from txsyncml.tests.helpers import FixtureHelper, SyncMLClientHelper
 from txsyncml.tests.test_base import TxSyncMLTestCase
+
+
+def pretty_xml(resp):
+    d = content(resp)
+    d.addCallback(lambda body: minidom.parseString(body))
+    d.addCallback(lambda xml: xml.toprettyxml())
+    return d
 
 
 class TxSyncMLTestCase(TxSyncMLTestCase):
@@ -94,10 +103,25 @@ class ClientSyncTestCase(TxSyncMLTestCase):
         self.syncml = SyncMLClientHelper()
 
     @inlineCallbacks
-    def test_client_init(self):
-        # FIXME: this test passes because stuff in the server is hard coded.
-        #        revisit this when we're actually parsing stuff.
+    def test_client_authenticated_init(self):
+        syncml = self.syncml.build_request(
+            username='Bruce2', password='OhBehave')
+        response = yield self.request(syncml.to_xml())
+        xml = yield pretty_xml(response)
+        self.assertTrue(str(constants.AUTHENTICATION_ACCEPTED) in xml)
+
+    @inlineCallbacks
+    def test_client_unauthenticated_init(self):
         syncml = self.syncml.build_request()
         response = yield self.request(syncml.to_xml())
-        body = yield content(response)
-        self.assertTrue(str(constants.AUTHENTICATION_ACCEPTED) in body)
+        xml = yield pretty_xml(response)
+        print xml
+        self.assertTrue(str(constants.AUTHORIZATION_REQUIRED) in xml)
+
+    @inlineCallbacks
+    def test_server_request_devinf(self):
+        syncml = self.syncml.build_request(
+            username='Bruce2', password='OhBehave')
+        response = yield self.request(syncml.to_xml())
+        xml = yield pretty_xml(response)
+        self.assertTrue(str(constants.AUTHENTICATION_ACCEPTED) in xml)
