@@ -71,6 +71,13 @@ class LocURI(SyncMLElement):
         return cls('LocURI', unicode(loc_uri))
 
 
+class LocName(SyncMLElement):
+
+    @classmethod
+    def create(cls, loc_name):
+        return cls('LocName', unicode(loc_name))
+
+
 class Target(SyncMLElement):
 
     allowed_children = [LocURI]
@@ -79,14 +86,24 @@ class Target(SyncMLElement):
     def create(cls, loc_uri):
         return cls('Target', None, children=[LocURI.create(loc_uri)])
 
+    @property
+    def loc_uri(self):
+        [loc_uri] = self.find('LocURI')
+        return loc_uri.value
+
 
 class Source(SyncMLElement):
 
-    allowed_children = [LocURI]
+    allowed_children = [LocURI, LocName]
 
     @classmethod
     def create(cls, loc_uri):
         return cls('Source', None, children=[LocURI.create(loc_uri)])
+
+    @property
+    def loc_uri(self):
+        [loc_uri] = self.find('LocURI')
+        return loc_uri.value
 
 
 class Type(SyncMLElement):
@@ -248,9 +265,24 @@ Mem = oneof('Mem', [
 Final = oneof('Final')
 
 
+class Format(SyncMLElement):
+
+    @classmethod
+    def create(cls, format_type):
+        return cls('Format', format_type, ns='syncml:metinf')
+
+
+class NextNonce(SyncMLElement):
+
+    @classmethod
+    def create(cls, nonce):
+        return cls('NextNonce', base64.b64encode(nonce), ns='syncml:metinf')
+
+
 class Meta(SyncMLElement):
 
-    allowed_children = [Type, Anchor, MaxMsgSize, MaxObjSize, Mem]
+    allowed_children = [Type, Anchor, MaxMsgSize, MaxObjSize, Mem, Format,
+                        NextNonce]
 
     @classmethod
     def create(cls, children=[]):
@@ -370,6 +402,26 @@ class SyncHdr(SyncMLElement):
 
         return cls('SyncHdr', None, children=children)
 
+    @property
+    def session_id(self):
+        [session_id] = self.find('SessionID')
+        return session_id.value
+
+    @property
+    def msg_id(self):
+        [msg_id] = self.find('MsgID')
+        return msg_id.value
+
+    @property
+    def target(self):
+        [target] = self.find('Target')
+        return target
+
+    @property
+    def source(self):
+        [source] = self.find('Source')
+        return source
+
 
 class CmdID(SyncMLElement):
 
@@ -423,6 +475,21 @@ class Cmd(SyncMLElement):
         return cls('Cmd', unicode(value))
 
 
+class Chal(SyncMLElement):
+
+    allowed_children = [Meta]
+
+    @classmethod
+    def create(cls, nonce, auth_type='syncml:auth-md5'):
+        return cls('Chal', None, children=[
+            Meta.create([
+                Type.create(auth_type),
+                Format.create('b64'),
+                NextNonce.create(nonce),
+            ])
+        ])
+
+
 class Status(SyncMLElement):
 
     allowed_children = [
@@ -432,13 +499,14 @@ class Status(SyncMLElement):
         Cmd,
         TargetRef,
         SourceRef,
+        Chal,
         Data,
     ]
 
     @classmethod
     def create(cls, cmd_id, msg_ref, cmd_ref, cmd,
-               target_ref, source_ref, code):
-        return cls('Status', None, children=[
+               target_ref, source_ref, code, chal=None):
+        children = [
             CmdID.create(cmd_id),
             MsgRef.create(msg_ref),
             CmdRef.create(cmd_ref),
@@ -446,7 +514,10 @@ class Status(SyncMLElement):
             TargetRef.create(target_ref),
             SourceRef.create(source_ref),
             Data.create(code),
-        ])
+        ]
+        if chal:
+            children.append(chal)
+        return cls('Status', None, children=children)
 
 
 class Put(SyncMLElement):
@@ -475,8 +546,10 @@ class SyncML(SyncMLElement):
     def create(cls, header=None, body=None):
         return cls('SyncML', None, children=filter(None, [header, body]))
 
-    def get_header(self):
+    @property
+    def header(self):
         return self.find(SyncHdr)[0]
 
-    def get_body(self):
+    @property
+    def body(self):
         return self.find(SyncBody)[0]
