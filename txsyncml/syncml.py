@@ -9,21 +9,27 @@ class SyncMLException(Exception):
 
 class AuthenticationBackend(object):
 
-    def authenticate(self, username, password):
-        log.msg('Authenticating: %r' % (username,))
+    def authenticate(self, identifier, type, data):
         return succeed(UserState())
 
 
 class UserState(object):
 
-    states = [
-        'PACKAGE_1',  # client init
-        'PACKAGE_2',  # server init
-        'PACKAGE_3',  # client modifications
-        'PACKAGE_4',  # server modifications
-        'PACKAGE_5',  # mapping ids
-        'PACKAGE_6',  # mapping status
-    ]
+    PACKAGE_1 = 'PACKAGE_1'  # client init
+    PACKAGE_2 = 'PACKAGE_2'  # server init
+    PACKAGE_3 = 'PACKAGE_3'  # client modifications
+    PACKAGE_4 = 'PACKAGE_4'  # server modifications
+    PACKAGE_5 = 'PACKAGE_5'  # mapping ids
+    PACKAGE_6 = 'PACKAGE_6'  # mapping status
+
+    states = (
+        PACKAGE_1,
+        PACKAGE_2,
+        PACKAGE_3,
+        PACKAGE_4,
+        PACKAGE_5,
+        PACKAGE_6,
+    )
 
     def __init__(self, current_state=None):
         if current_state is not None and current_state not in self.states:
@@ -52,8 +58,8 @@ class SyncMLEngine(object):
         self.user_state = user_state
 
     def process(self, doc):
-        self.process_header(doc.get_header())
-        self.process_body(doc.get_body())
+        self.process_header(doc.header)
+        self.process_body(doc.body)
 
     def process_header(self, header):
         print header

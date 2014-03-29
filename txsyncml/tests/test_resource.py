@@ -98,6 +98,6 @@ class ClientSyncTestCase(TxSyncMLTestCase):
         # FIXME: this test passes because stuff in the server is hard coded.
         #        revisit this when we're actually parsing stuff.
         syncml = self.syncml.build_request()
-        response = yield self.request(syncml.build().toXml())
+        response = yield self.request(syncml.to_xml())
         body = yield content(response)
         self.assertTrue(str(constants.AUTHENTICATION_ACCEPTED) in body)

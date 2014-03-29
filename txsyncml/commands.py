@@ -1,5 +1,6 @@
 # -*- test-case-name: txsyncml.tests.test_commands -*-
-import base64
+from base64 import b64encode
+from hashlib import md5
 
 from twisted.words.xish.domish import Element
 
@@ -276,7 +277,7 @@ class NextNonce(SyncMLElement):
 
     @classmethod
     def create(cls, nonce):
-        return cls('NextNonce', base64.b64encode(nonce), ns='syncml:metinf')
+        return cls('NextNonce', nonce.encode('base64'), ns='syncml:metinf')
 
 
 class Meta(SyncMLElement):
@@ -318,42 +319,57 @@ class Data(SyncMLElement):
         return cls('Data', unicode(content))
 
 
+def md5digest(m):
+    return md5(m).digest()
+
+
+def md5_cred_hasher(username, password, nonce):
+    return b64encode(
+        md5digest(
+            '%s:%s' % (
+                b64encode(
+                    md5digest('%s:%s' % (username, password))
+                ), nonce))
+    ).strip()
+
+
+def base64_cred_hasher(username, password, nonce=None):
+    # NOTE: Nonce is not used for base64 hashes
+    return ('%s:%s' % (username, password)).encode('base64').strip()
+
+
 class Cred(SyncMLElement):
 
     allowed_children = [Meta, Data]
-    auth_decoders = {
-        'syncml:auth-basic': lambda d: base64.b64decode(d).split(':'),
+    auth_type_encoders = {
+        'syncml:auth-basic': base64_cred_hasher,
+        'syncml:auth-md5': md5_cred_hasher,
     }
 
     @classmethod
-    def create(cls, username, password, auth_type='syncml:auth-basic'):
+    def create(cls, username, password, nonce=None,
+               auth_type='syncml:auth-basic', format='b64'):
+        if auth_type not in cls.auth_type_encoders:
+            raise SyncMLError('Unsupported Cred auth type: %r' % (
+                auth_type,))
+        encoder = cls.auth_type_encoders[auth_type]
         return cls('Cred', None, children=[
-            Meta.create([Type.create(auth_type)]),
-            Data.create(base64.b64encode('%s:%s' % (username, password)))
+            Meta.create([
+                Type.create(auth_type),
+                Format.create(format)]),
+            Data.create(encoder(username, password, nonce))
         ])
 
-    def decode_auth(self):
+    @property
+    def type(self):
         [meta] = self.find('Meta')
         [type_] = meta.find('Type')
+        return type_.value
+
+    @property
+    def data(self):
         [data] = self.find('Data')
-
-        decoder = self.auth_decoders.get(type_.value)
-
-        if decoder is None:
-            raise SyncMLError('Auth type %r is not supported.' % (
-                type_.value))
-
-        return decoder(data.value)
-
-    @property
-    def username(self):
-        auth = self.decode_auth()
-        return auth[0]
-
-    @property
-    def password(self):
-        auth = self.decode_auth()
-        return auth[1]
+        return data.value
 
 
 class VerProto(SyncMLElement):

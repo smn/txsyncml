@@ -1,7 +1,6 @@
 # -*- test-case-name: txsyncml.tests.test_resource -*-
 
-from twisted.internet import reactor
-from twisted.internet.defer import maybeDeferred, Deferred
+from twisted.internet.defer import maybeDeferred
 from twisted.python import log
 from twisted.web.resource import Resource
 from twisted.web import http
@@ -12,7 +11,7 @@ from txsyncml import constants
 from txsyncml.commands import (
     SyncML, SyncHdr, SyncBody, Target, Source, Status, Chal)
 from txsyncml.parser import SyncMLParser
-from txsyncml.syncml import SyncMLEngine, UserState, AuthenticationBackend
+from txsyncml.syncml import SyncMLEngine, AuthenticationBackend
 
 
 class TxSyncMLError(Exception):
@@ -90,7 +89,8 @@ class TxSyncMLResource(Resource):
         [cred] = header.find('Cred')
 
         auth = AuthenticationBackend()
-        return auth.authenticate(cred.username, cred.password)
+        return auth.authenticate(
+            header.source.loc_uri, cred.type, cred.data)
 
     def process_syncml(self, doc, request):
 
@@ -139,5 +139,5 @@ class TxSyncMLResource(Resource):
                               chal=Chal.create('nonce'))])
         return SyncML.create(header=header, body=body)
 
-    def handle_unauthorized_syncml(self, failure):
-        raise NotImplementedError('Not implemented yet')
+    def handle_unauthorized_syncml(self, failure, doc):
+        raise failure

@@ -41,22 +41,23 @@ class SyncMLElementTestCase(TxSyncMLTestCase):
 
     def test_cred(self):
         self.assertXml(
-            Cred.create('foo', 'bar', auth_type='some-algorithm'),
+            Cred.create('foo', 'bar', auth_type='syncml:auth-basic'),
             "<Cred>"
             "<Meta>"
-            "<Type xmlns='syncml:metinf'>some-algorithm</Type>"
+            "<Type xmlns='syncml:metinf'>syncml:auth-basic</Type>"
+            "<Format xmlns='syncml:metinf'>b64</Format>"
             "</Meta>"
             "<Data>%s</Data>"
             "</Cred>" % (b64encode("foo:bar")))
 
     def test_cred_properties(self):
         cred = Cred.create('foo', 'bar', auth_type='syncml:auth-basic')
-        self.assertEqual(cred.username, 'foo')
-        self.assertEqual(cred.password, 'bar')
+        self.assertEqual(cred.type, 'syncml:auth-basic')
+        self.assertEqual(cred.data, 'foo:bar'.encode('base64').strip())
 
     def test_cred_invalid_authtype(self):
-        cred = Cred.create('foo', 'bar', auth_type='foo')
-        self.assertRaises(SyncMLError, lambda: cred.username)
+        self.assertRaises(
+            SyncMLError, Cred.create, 'foo', 'bar', auth_type='foo')
 
     def test_meta(self):
         meta = Meta.create([
