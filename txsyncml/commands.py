@@ -50,6 +50,17 @@ class SyncMLElement(object):
             child_name = child_name.__name__
         return [child for child in self.children if child.name == child_name]
 
+    def get(self, element_name, default=None):
+        elements = self.find(element_name)
+        if not elements:
+            return default
+
+        [element] = elements
+        return element.value
+
+    def has(self, prop_name):
+        return len(self.find(prop_name)) > 0
+
 
 class SessionID(SyncMLElement):
 
@@ -185,72 +196,148 @@ DisplayName = oneof('DisplayName')
 MaxGUIDSize = oneof('MaxGUIDSize')
 CTType = oneof('CTType')
 VerCT = oneof('VerCT')
-Rx_Pref = oneof('Rx-Pref', [
-    CTType,
-    VerCT
-])
-Tx_Pref = oneof('Tx-Pref', [
-    CTType,
-    VerCT
-])
-Rx = oneof('Rx', [
-    CTType,
-    VerCT
-])
-Tx = oneof('Tx', [
-    CTType,
-    VerCT
-])
+
+
+class Rx(SyncMLElement):
+
+    allowed_children = (
+        CTType,
+        VerCT,
+    )
+
+    @property
+    def type(self):
+        return self.get('CTType')
+
+    @property
+    def version(self):
+        return self.get('VerCT')
+
+
+class Rx_Pref(Rx):
+    pass
+
+
+class Tx(Rx):
+    pass
+
+
+class Tx_Pref(Tx):
+    pass
+
 PropName = oneof('PropName')
 MaxSize = oneof('MaxSize')
 ParamName = oneof('ParamName')
 ValEnum = oneof('ValEnum')
 MaxOccur = oneof('MaxOccur')
 NoTruncate = oneof('NoTruncate')
-PropParam = oneof('PropParam', [
-    ParamName,
-    ValEnum,
-])
+
+
+class PropParam(SyncMLElement):
+
+    allowed_children = (
+        ParamName,
+        ValEnum,
+    )
+
+    @property
+    def param_name(self):
+        return self.get('ParamName')
+
+    @property
+    def enums(self):
+        return [enum.value for enum in self.find('ValEnum')]
+
+
 MaxID = oneof('MaxID')
-DSMem = oneof('DSMem', [
-    MaxID,
-])
-Property = oneof('Property', [
-    PropName,
-    MaxSize,
-    MaxOccur,
-    NoTruncate,
-    PropParam,
-    ValEnum
-])
+
+
+class DSMem(SyncMLElement):
+
+    allowed_children = (
+        MaxID,
+    )
+
+    @property
+    def max_id(self):
+        return self.get('MaxID')
+
+
+class Property(SyncMLElement):
+
+    allowed_children = (
+        PropName,
+        MaxSize,
+        MaxOccur,
+        NoTruncate,
+        PropParam,
+        ValEnum,
+    )
+
+    @property
+    def prop_name(self):
+        return self.get('PropName')
+
+    @property
+    def max_size(self):
+        return self.get('MaxSize')
+
+    @property
+    def max_occur(self):
+        return self.get('MaxOccur')
+
+    @property
+    def no_truncate(self):
+        if self.has('NoTruncate'):
+            return True
+
+    @property
+    def params(self):
+        return self.find('PropParam')
+
+    @property
+    def enums(self):
+        enums = self.find('ValEnum')
+        if enums:
+            return [enum.value for enum in enums]
+
+
 Size = oneof('Size')
-CTCap = oneof('CTCap', [
-    CTType,
-    VerCT,
-    Property,
-    PropName,
-    Size,
-    ParamName,
-    ValEnum,
-])
+
+
+class CTCap(SyncMLElement):
+
+    allowed_children = (
+        CTType,
+        VerCT,
+        Property,
+        Size,
+        ParamName,
+        ValEnum,
+    )
+
+    @property
+    def type(self):
+        return self.get('CTType')
+
+    @property
+    def version(self):
+        return self.get('VerCT')
+
+    @property
+    def properties(self):
+        return self.find('Property')
+
+    def get_property(self, prop_name):
+        for prop in self.properties:
+            if prop.prop_name == prop_name:
+                return prop
+
 
 SupportLargeObjs = oneof('SupportLargeObjs')
 SyncType = oneof('SyncType')
 SyncCap = oneof('SyncCap', [
     SyncType
-])
-
-DataStore = oneof('DataStore', [
-    SourceRef,
-    DisplayName,
-    MaxGUIDSize,
-    Rx_Pref,
-    Rx,
-    Tx_Pref,
-    Tx,
-    CTCap,
-    DSMem,
-    SyncCap,
 ])
 
 MaxObjSize = oneof('MaxObjSize')
@@ -264,6 +351,71 @@ Mem = oneof('Mem', [
 ])
 
 Final = oneof('Final')
+
+
+class DataStore(SyncMLElement):
+
+    allowed_children = [
+        SourceRef,
+        DisplayName,
+        MaxGUIDSize,
+        Rx_Pref,
+        Rx,
+        Tx_Pref,
+        Tx,
+        CTCap,
+        DSMem,
+        SyncCap,
+    ]
+
+    @property
+    def source_ref(self):
+        return self.get('SourceRef')
+
+    @property
+    def display_name(self):
+        return self.get('DisplayName')
+
+    @property
+    def max_guid_size(self):
+        return self.get('MaxGUIDSize')
+
+    @property
+    def rx_preferred(self):
+        [rx_pref] = self.find('Rx_Pref')
+        return rx_pref
+
+    @property
+    def rx(self):
+        return self.find('Rx_Pref') + self.find('Rx')
+
+    @property
+    def tx_preferred(self):
+        [tx_pref] = self.find('Tx_Pref')
+        return tx_pref
+
+    @property
+    def tx(self):
+        return self.find('Tx_Pref') + self.find('Tx')
+
+    def get_capabilities(self, cttype):
+        for cap in self.find('CTCap'):
+            if cap.type == cttype:
+                return cap
+
+    @property
+    def ds_mem(self):
+        [ds_mem] = self.find('DSMem')
+        return ds_mem
+
+    @property
+    def sync_capabilities(self):
+        if not self.has('SyncCap'):
+            return []
+
+        [sync_cap] = self.find('SyncCap')
+        return [int(sync_type.value)
+                for sync_type in sync_cap.find('SyncType')]
 
 
 class Format(SyncMLElement):
@@ -289,6 +441,14 @@ class Meta(SyncMLElement):
     def create(cls, children=[]):
         return cls('Meta', None, children=children)
 
+    @property
+    def type(self):
+        return self.get('Type')
+
+    @property
+    def max_object_size(self):
+        return self.get('MaxObjSize')
+
 
 class DevInf(SyncMLElement):
 
@@ -306,6 +466,55 @@ class DevInf(SyncMLElement):
         DataStore,
         CTCap,
     ]
+
+    @property
+    def ver_dtd(self):
+        return self.get('VerDTD')
+
+    @property
+    def manufacturer(self):
+        return self.get('Man')
+
+    @property
+    def model(self):
+        return self.get('Mod')
+
+    @property
+    def firmware_version(self):
+        return self.get('FwV')
+
+    @property
+    def software_version(self):
+        return self.get('SwV')
+
+    @property
+    def hardware_version(self):
+        return self.get('HwV')
+
+    @property
+    def device_id(self):
+        return self.get('DevID')
+
+    @property
+    def device_type(self):
+        return self.get('DevTyp')
+
+    @property
+    def supports_utc(self):
+        return self.has('UTC')
+
+    @property
+    def supports_large_objects(self):
+        return self.has('SupportLargeObjs')
+
+    @property
+    def datastores(self):
+        return self.find('DataStore')
+
+    def get_datastore(self, name):
+        for ds in self.find('DataStore'):
+            if ds.source_ref == name:
+                return ds
 
 
 class Data(SyncMLElement):
@@ -549,9 +758,30 @@ class SyncBody(SyncMLElement):
 
     allowed_children = [Alert, Meta, Status, Put, Final]
 
+    def __init__(self, *args, **kwargs):
+        super(SyncBody, self).__init__(*args, **kwargs)
+        self.devinf = None
+
     @classmethod
     def create(cls, alerts=[], statuses=[]):
         return cls('SyncBody', None, children=(alerts + statuses))
+
+    def get_devinf(self):
+        # Lookup cache
+        if self.devinf is not None:
+            return self.devinf
+
+        puts = self.find('Put')
+        for put in puts:
+            [meta] = put.find('Meta')
+            if 'devinf' in meta.type:
+                [item] = put.find('Item')
+                [source] = item.find('Source')
+                [data] = item.find('Data')
+                [devinf] = data.find('DevInf')
+                # Cache
+                self.devinf = devinf
+                return self.devinf
 
 
 class SyncML(SyncMLElement):

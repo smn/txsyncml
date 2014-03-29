@@ -7,7 +7,7 @@ from txsyncml.commands import (
 from txsyncml.tests.test_base import TxSyncMLTestCase
 
 
-class SyncMLElementTestCase(TxSyncMLTestCase):
+class TestCreateSyncMLElement(TxSyncMLTestCase):
 
     def assertXml(self, element, xml_str):
         self.assertEqual(element.to_xml(), xml_str)
