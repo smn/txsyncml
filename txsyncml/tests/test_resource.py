@@ -115,7 +115,6 @@ class ClientSyncTestCase(TxSyncMLTestCase):
         syncml = self.syncml.build_request()
         response = yield self.request(syncml.to_xml())
         xml = yield pretty_xml(response)
-        print xml
         self.assertTrue(str(constants.AUTHORIZATION_REQUIRED) in xml)
 
     @inlineCallbacks

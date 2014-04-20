@@ -11,7 +11,7 @@ from txsyncml import constants
 from txsyncml.commands import (
     SyncML, SyncHdr, SyncBody, Target, Source, Status, Chal)
 from txsyncml.parser import SyncMLParser
-from txsyncml.syncml import SyncMLEngine, AuthenticationBackend
+from txsyncml.syncml import AuthenticationBackend
 
 
 class TxSyncMLError(Exception):
@@ -103,9 +103,27 @@ class TxSyncMLResource(Resource):
             return d
         return self.ask_for_authentication(doc, request)
 
-    def handle_authorized_syncml(self, user_state, doc):
-        syncml_engine = SyncMLEngine(user_state)
-        syncml_engine.process(doc)
+    def handle_authorized_syncml(self, user, doc):
+
+        body = doc.body
+        header = doc.header
+        # device = user.current_device
+        device = None
+
+        devinf = body.get_devinf()
+        if devinf is not None:
+            print 'setting devinf'
+            # device.set_devinf(devinf)
+        elif device is None:
+            # ask for devinf
+            print 'asking for deving'
+
+        # return refresh from client
+
+        for alert in body.alerts:
+            print alert.cmd_id
+            print alert.data
+            print alert.item.target.loc_uri
 
         header = SyncHdr.create(
             1, 1,

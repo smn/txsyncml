@@ -667,6 +667,21 @@ class Item(SyncMLElement):
             Source.create(source),
             Meta.create(children=[anchor])])
 
+    @property
+    def target(self):
+        [target] = self.find('Target')
+        return target
+
+    @property
+    def source(self):
+        [source] = self.find('Source')
+        return source
+
+    @property
+    def meta(self):
+        [meta] = self.find('Meta')
+        return meta
+
 
 class Alert(SyncMLElement):
 
@@ -678,6 +693,19 @@ class Alert(SyncMLElement):
             CmdID.create(cmd_id),
             Data.create(code),
         ] + items)
+
+    @property
+    def cmd_id(self):
+        return self.get('CmdID')
+
+    @property
+    def data(self):
+        return self.get('Data')
+
+    @property
+    def item(self):
+        [item] = self.find('Item')
+        return item
 
 
 class MsgRef(SyncMLElement):
@@ -755,17 +783,33 @@ class Put(SyncMLElement):
     ]
 
 
+class Get(Put):
+    pass
+
+
 class SyncBody(SyncMLElement):
 
-    allowed_children = [Alert, Meta, Status, Put, Final]
+    allowed_children = [Alert, Meta, Status, Get, Put, Final]
 
     def __init__(self, *args, **kwargs):
         super(SyncBody, self).__init__(*args, **kwargs)
         self.devinf = None
 
     @classmethod
-    def create(cls, alerts=[], statuses=[]):
-        return cls('SyncBody', None, children=(alerts + statuses))
+    def create(cls, puts=[], gets=[], alerts=[], statuses=[], final=False):
+        children = (alerts + statuses + puts + gets)
+        if final:
+            children.append(Final())
+        return cls('SyncBody', None,
+                   children=children)
+
+    @property
+    def alerts(self):
+        return self.find('Alert')
+
+    @property
+    def puts(self):
+        return self.find('Put')
 
     def get_devinf(self):
         # Lookup cache

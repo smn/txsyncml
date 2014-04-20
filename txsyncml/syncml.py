@@ -50,20 +50,3 @@ class UserState(object):
                     next_state,))
 
         return next_state
-
-
-class SyncMLEngine(object):
-
-    def __init__(self, user_state):
-        self.user_state = user_state
-
-    def process(self, doc):
-        self.process_header(doc.header)
-        self.process_body(doc.body)
-
-    def process_header(self, header):
-        print header
-
-    def process_body(self, body):
-        print body
-        print body.find('Alert')
