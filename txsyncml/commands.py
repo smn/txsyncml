@@ -23,8 +23,8 @@ class SyncMLElement(object):
 
     def add_child(self, child):
         if child.__class__ not in self.allowed_children:
-            raise SyncMLError('Child %r not allowed for %r.' % (
-                child.__class__, self.__class__))
+            raise SyncMLError('Child %r of type %r not allowed for %r.' % (
+                child, child.__class__, self.__class__))
         self.children.append(child)
 
     def build(self):
@@ -121,8 +121,8 @@ class Source(SyncMLElement):
 class Type(SyncMLElement):
 
     @classmethod
-    def create(cls, auth_type):
-        return cls('Type', auth_type, ns='syncml:metinf')
+    def create(cls, type_):
+        return cls('Type', type_, ns='syncml:metinf')
 
 
 class Next(SyncMLElement):
@@ -314,6 +314,7 @@ class CTCap(SyncMLElement):
         Size,
         ParamName,
         ValEnum,
+        PropName,
     )
 
     @property
@@ -648,6 +649,11 @@ class SyncHdr(SyncMLElement):
         [source] = self.find('Source')
         return source
 
+    @property
+    def cmd_id(self):
+        # AFAIK always 0 for SyncHdr
+        return '0'
+
 
 class CmdID(SyncMLElement):
 
@@ -661,11 +667,17 @@ class Item(SyncMLElement):
     allowed_children = [Target, Source, Meta, Data]
 
     @classmethod
-    def create(cls, target, source, anchor):
-        return cls('Item', None, children=[
-            Target.create(target),
-            Source.create(source),
-            Meta.create(children=[anchor])])
+    def create(cls, target=None, source=None, anchor=None):
+        children = []
+
+        if target:
+            children.append(Target.create(target))
+        if source:
+            children.append(Source.crete(source))
+        if anchor:
+            Meta.create(children=[anchor])
+
+        return cls('Item', None, children=children)
 
     @property
     def target(self):
@@ -758,19 +770,21 @@ class Status(SyncMLElement):
     ]
 
     @classmethod
-    def create(cls, cmd_id, msg_ref, cmd_ref, cmd,
-               target_ref, source_ref, code, chal=None):
+    def create(cls, cmd_id, msg_ref, cmd_ref, cmd, code,
+               target_ref=None, source_ref=None, chal=None):
         children = [
             CmdID.create(cmd_id),
             MsgRef.create(msg_ref),
             CmdRef.create(cmd_ref),
             Cmd.create(cmd),
-            TargetRef.create(target_ref),
-            SourceRef.create(source_ref),
             Data.create(code),
         ]
         if chal:
             children.append(chal)
+        if target_ref:
+            children.append(TargetRef.create(target_ref))
+        if source_ref:
+            children.append(SourceRef.create(source_ref))
         return cls('Status', None, children=children)
 
 
@@ -782,9 +796,33 @@ class Put(SyncMLElement):
         Item,
     ]
 
+    @property
+    def cmd_id(self):
+        return self.get('CmdID')
+
+    def get_item(self):
+        [item] = self.find('Item')
+        return item
+
+    def get_devinf(self):
+        [meta] = self.find('Meta')
+        if 'devinf' in meta.type:
+            item = self.get_item()
+            [source] = item.find('Source')
+            [data] = item.find('Data')
+            [devinf] = data.find('DevInf')
+            return devinf
+
 
 class Get(Put):
-    pass
+
+    def create(self, cmd_id, loc_uri):
+        return cls('Get', None, children=[
+            CmdID.create(cmd_id),
+            Meta.create(
+                Type.create('application/vnd.syncml-devinf+xml')),
+            Item.create(target=loc_uri),
+        ])
 
 
 class SyncBody(SyncMLElement):
@@ -793,7 +831,11 @@ class SyncBody(SyncMLElement):
 
     def __init__(self, *args, **kwargs):
         super(SyncBody, self).__init__(*args, **kwargs)
-        self.devinf = None
+        self._cmd_id = 0
+
+    def next_cmd_id(self):
+        self._cmd_id += 1
+        return self._cmd_id
 
     @classmethod
     def create(cls, puts=[], gets=[], alerts=[], statuses=[], final=False):
@@ -811,22 +853,14 @@ class SyncBody(SyncMLElement):
     def puts(self):
         return self.find('Put')
 
-    def get_devinf(self):
-        # Lookup cache
-        if self.devinf is not None:
-            return self.devinf
+    def request_devinf(self):
+        self.children.append(Get.create('./devinf11'))
 
-        puts = self.find('Put')
-        for put in puts:
-            [meta] = put.find('Meta')
-            if 'devinf' in meta.type:
-                [item] = put.find('Item')
-                [source] = item.find('Source')
-                [data] = item.find('Data')
-                [devinf] = data.find('DevInf')
-                # Cache
-                self.devinf = devinf
-                return self.devinf
+    def status(self, msg_ref, cmd, code, **kwargs):
+        self.add_child(
+            Status.create(
+                cmd_id=self.next_cmd_id(), msg_ref=msg_ref, cmd_ref=cmd.cmd_id,
+                cmd=cmd.name, code=code, **kwargs))
 
 
 class SyncML(SyncMLElement):

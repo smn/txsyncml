@@ -2,8 +2,18 @@ from twisted.application import strports
 from twisted.internet import reactor
 from twisted.python import usage
 from twisted.web import server
+from twisted.internet.task import LoopingCall
 
-from txsyncml.resource import TxSyncMLResource
+from txsyncml import resource
+
+
+def do_rebuild(mod):
+    from twisted.python.rebuild import rebuild
+    rebuild(mod, doLog=False)
+
+lc = LoopingCall(do_rebuild, resource)
+# lc.start(1)
+
 
 DEFAULT_PORT = 'tcp:8080'
 
@@ -16,6 +26,5 @@ class Options(usage.Options):
 
 
 def makeService(options):
-    resource = TxSyncMLResource(reactor=reactor)
-    site = server.Site(resource)
+    site = server.Site(resource.TxSyncMLResource(reactor=reactor))
     return strports.service(options['endpoint'], site)

@@ -1,4 +1,5 @@
 # -*- test-case-name: txsyncml.tests.test_resource -*-
+from xml.dom import minidom
 
 from twisted.internet.defer import maybeDeferred
 from twisted.python import log
@@ -69,15 +70,19 @@ class TxSyncMLResource(Resource):
     def decode_request(self, request, codec):
         content = request.content.read()
 
-        with open('request.wbxml', 'wb') as fp:
-            fp.write(content)
+        def debug(xml):
+            print minidom.parseString(xml).toprettyxml()
+            return xml
 
         d = codec.decode(content)
+        d.addCallback(debug)
         d.addCallback(SyncMLParser.parse)
         return d
 
     def encode_response(self, doc, codec):
-        return codec.encode(doc.to_xml())
+        xml = doc.to_xml()
+        print minidom.parseString(xml).toprettyxml()
+        return codec.encode(xml)
 
     def finish_request(self, response, request, content_type):
         request.setHeader('Content-Type', content_type)
@@ -105,37 +110,39 @@ class TxSyncMLResource(Resource):
 
     def handle_authorized_syncml(self, user, doc):
 
-        body = doc.body
-        header = doc.header
-        # device = user.current_device
-        device = None
+        request_body = doc.body
+        request_header = doc.header
+        device = user.current_device
 
-        devinf = body.get_devinf()
-        if devinf is not None:
-            print 'setting devinf'
-            # device.set_devinf(devinf)
-        elif device is None:
-            # ask for devinf
-            print 'asking for deving'
+        response_header = SyncHdr.create(
+            request_header.session_id, request_header.msg_id,
+            target=Target.create(request_header.source.loc_uri),
+            source=Source.create(request_header.target.loc_uri))
 
-        # return refresh from client
+        response_body = SyncBody.create()
+        response_body.status(
+            request_header.msg_id, request_header,
+            constants.AUTHENTICATION_ACCEPTED,
+            source_ref=request_header.source.loc_uri,
+            target_ref=request_header.target.loc_uri)
 
-        for alert in body.alerts:
-            print alert.cmd_id
-            print alert.data
-            print alert.item.target.loc_uri
+        for put in request_body.puts:
+            devinf = put.get_devinf()
 
-        header = SyncHdr.create(
-            1, 1,
-            target=Target.create('target'),
-            source=Source.create('source'))
-        body = SyncBody.create(
-            statuses=[
-                Status.create(cmd_id=1, msg_ref=1, cmd_ref=0, cmd='SyncHdr',
-                              target_ref='http://www.syncml.org/sync-server',
-                              source_ref='IMEI:493005100592800',
-                              code=constants.AUTHENTICATION_ACCEPTED)])
-        return SyncML.create(header=header, body=body)
+            if devinf is not None:
+                device.set_devinf(devinf)
+                response_body.status(
+                    request_header.msg_id, put, constants.STATUS_OK,
+                    source_ref='./devinf11')
+            else:
+                request.request_devinf()
+
+        for alert in request_body.alerts:
+            print 'cmdid', alert.cmd_id
+            print 'data', alert.data
+            print 'locuri', alert.item.target.loc_uri
+
+        return SyncML.create(header=response_header, body=response_body)
 
     def ask_for_authentication(self, doc, request):
 
@@ -147,14 +154,14 @@ class TxSyncMLResource(Resource):
             req_header.session_id, req_header.msg_id,
             target=Target.create(req_header.source.loc_uri),
             source=Source.create(req_header.target.loc_uri))
-        body = SyncBody.create(
-            statuses=[
-                Status.create(cmd_id=1, msg_ref=req_header.msg_id,
-                              cmd_ref=0, cmd='SyncHdr',
-                              target_ref=req_header.target.loc_uri,
-                              source_ref=req_header.source.loc_uri,
-                              code=constants.AUTHORIZATION_REQUIRED,
-                              chal=Chal.create('nonce'))])
+        body = SyncBody.create()
+        print 'hello?!!!'
+        body.status(
+            req_header.msg_id, req_header, constants.AUTHORIZATION_REQUIRED,
+            target_ref=req_header.target.loc_uri,
+            source_ref=req_header.source.loc_uri,
+            chal=Chal.create('nonce'))
+
         return SyncML.create(header=header, body=body)
 
     def handle_unauthorized_syncml(self, failure, doc):

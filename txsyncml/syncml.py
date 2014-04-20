@@ -13,6 +13,18 @@ class AuthenticationBackend(object):
         return succeed(UserState())
 
 
+class Device(object):
+
+    def __init__(self):
+        self.devinf = None
+
+    def get_devinf(self):
+        return self.devinf
+
+    def set_devinf(self, devinf):
+        self.devinf = devinf
+
+
 class UserState(object):
 
     PACKAGE_1 = 'PACKAGE_1'  # client init
@@ -35,6 +47,7 @@ class UserState(object):
         if current_state is not None and current_state not in self.states:
             raise SyncMLException('Invalid state: %r.' % (current_state,))
         self.current_state = current_state
+        self.current_device = Device()
 
     @property
     def next_state(self):
