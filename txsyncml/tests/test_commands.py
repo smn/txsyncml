@@ -119,8 +119,9 @@ class TestCreateSyncMLElement(TxSyncMLTestCase):
 
     def test_status(self):
         self.assertXml(
-            Status.create(1, 2, 3, 'SyncHdr', 'target', 'source',
-                          constants.AUTHENTICATION_ACCEPTED),
+            Status.create(1, 2, 3, 'SyncHdr',
+                          target_ref='target', source_ref='source',
+                          code=constants.AUTHENTICATION_ACCEPTED),
             "<Status>"
             "<CmdID>1</CmdID>"
             "<MsgRef>2</MsgRef>"

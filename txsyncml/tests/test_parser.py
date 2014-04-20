@@ -30,7 +30,8 @@ class SyncMLParserTestCase(TxSyncMLTestCase):
     def test_devinf_parsing(self):
         data = self.fixtures.get_fixture('sony-ericsson-k800i-package1.xml')
         doc = SyncMLParser.parse(data)
-        devinf = doc.body.get_devinf()
+        [put] = doc.body.puts
+        devinf = put.get_devinf()
 
         self.assertEqual(devinf.ver_dtd, '1.2')
         self.assertEqual(devinf.manufacturer, 'SonyEricsson')
@@ -46,7 +47,8 @@ class SyncMLParserTestCase(TxSyncMLTestCase):
     def test_datastores_parsing(self):
         data = self.fixtures.get_fixture('sony-ericsson-k800i-package1.xml')
         doc = SyncMLParser.parse(data)
-        devinf = doc.body.get_devinf()
+        [put] = doc.body.puts
+        devinf = put.get_devinf()
         self.assertTrue(len(devinf.datastores), 4)
         self.assertTrue(
             ['Contacts', 'Calendar', 'Tasks', 'Notes', 'Bookmarks'],
@@ -61,7 +63,8 @@ class ContactDataStoreTestCase(TxSyncMLTestCase):
     def test_contacts_datastores_parsing(self):
         data = self.fixtures.get_fixture('sony-ericsson-k800i-package1.xml')
         doc = SyncMLParser.parse(data)
-        devinf = doc.body.get_devinf()
+        [put] = doc.body.puts
+        devinf = put.get_devinf()
         ds = devinf.get_datastore('Contacts')
         self.assertEqual(ds.source_ref, 'Contacts')
         self.assertEqual(ds.display_name, 'Contacts')
@@ -82,14 +85,16 @@ class ContactDataStoreTestCase(TxSyncMLTestCase):
     def test_datastore_ds_mem(self):
         data = self.fixtures.get_fixture('sony-ericsson-k800i-package1.xml')
         doc = SyncMLParser.parse(data)
-        devinf = doc.body.get_devinf()
+        [put] = doc.body.puts
+        devinf = put.get_devinf()
         ds = devinf.get_datastore('Contacts')
         self.assertEqual(ds.ds_mem.max_id, '1000')
 
     def test_datastore_sync_capabilities(self):
         data = self.fixtures.get_fixture('sony-ericsson-k800i-package1.xml')
         doc = SyncMLParser.parse(data)
-        devinf = doc.body.get_devinf()
+        [put] = doc.body.puts
+        devinf = put.get_devinf()
         ds = devinf.get_datastore('Contacts')
         self.assertEqual(ds.sync_capabilities, [
             constants.SYNC_CAP_TWO_WAY,
@@ -111,7 +116,8 @@ class VCard21ParserTestCase(TxSyncMLTestCase):
     def test_capabilities_parsing(self):
         data = self.fixtures.get_fixture('sony-ericsson-k800i-package1.xml')
         doc = SyncMLParser.parse(data)
-        devinf = doc.body.get_devinf()
+        [put] = doc.body.puts
+        devinf = put.get_devinf()
         ds = devinf.get_datastore('Contacts')
         cap = ds.get_capabilities(ds.rx_preferred.type)
         self.assertEqual(cap.type, ds.rx_preferred.type)
@@ -125,7 +131,8 @@ class VCard21ParserTestCase(TxSyncMLTestCase):
                       fixture='sony-ericsson-k800i-package1.xml'):
         data = self.fixtures.get_fixture('sony-ericsson-k800i-package1.xml')
         doc = SyncMLParser.parse(data)
-        devinf = doc.body.get_devinf()
+        [put] = doc.body.puts
+        devinf = put.get_devinf()
         return devinf.get_datastore(ds_name)
 
     def test_bday_property_parsing(self):

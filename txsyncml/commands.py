@@ -673,9 +673,9 @@ class Item(SyncMLElement):
         if target:
             children.append(Target.create(target))
         if source:
-            children.append(Source.crete(source))
+            children.append(Source.create(source))
         if anchor:
-            Meta.create(children=[anchor])
+            children.append(Meta.create(children=[anchor]))
 
         return cls('Item', None, children=children)
 
