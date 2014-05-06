@@ -10,9 +10,9 @@ from twisted.web.server import NOT_DONE_YET
 from txsyncml.codecs import get_codec
 from txsyncml import constants
 from txsyncml.commands import (
-    SyncML, SyncHdr, SyncBody, Target, Source, Status, Chal)
+    SyncML, SyncHdr, SyncBody, Target, Source, Chal, Alert, Item, Anchor)
 from txsyncml.parser import SyncMLParser
-from txsyncml.syncml import AuthenticationBackend
+from txsyncml.syncml import AuthenticationBackend, UserState
 
 
 class TxSyncMLError(Exception):
@@ -36,6 +36,13 @@ class TxSyncMLResource(Resource):
     def __init__(self, reactor):
         Resource.__init__(self)
         self.reactor = reactor
+        self.state_handler_map = {
+            UserState.PACKAGE_1: self.handle_package_1_syncml,
+        }
+
+        self.alert_handler_map = {
+            constants.SYNC_TWO_WAY: self.handle_sync_two_way,
+        }
 
     def render_POST(self, request):
         d = maybeDeferred(self.get_codec, request)
@@ -112,6 +119,10 @@ class TxSyncMLResource(Resource):
         return self.ask_for_authentication(doc, request)
 
     def handle_authorized_syncml(self, user, doc):
+        handler = self.state_handler_map[user.get_next_state()]
+        return handler(user, doc)
+
+    def handle_package_1_syncml(self, user, doc):
 
         request_body = doc.body
         request_header = doc.header
@@ -142,12 +153,24 @@ class TxSyncMLResource(Resource):
         else:
             response_body.request_devinf()
 
-        # for alert in request_body.alerts:
-        #     print 'cmdid', alert.cmd_id
-        #     print 'data', alert.data
-        #     print 'locuri', alert.item.target.loc_uri
+        for command in request_body.alerts:
+            handler = self.alert_handler_map[command.data]
+            handler(request_header, response_body, command)
 
         return SyncML.create(header=response_header, body=response_body)
+
+    def handle_sync_two_way(self, request_header, response_body, command):
+        response_body.status(request_header.msg_id, command, 200)
+        meta = command.item.meta
+        [anchor] = meta.find('Anchor')
+        alert = Alert.create(
+            response_body.next_cmd_id(), constants.SYNC_TWO_WAY, items=[
+                Item.create(
+                    request_header.source.loc_uri,
+                    request_header.target.loc_uri,
+                    Anchor.create(anchor.last, anchor.next))
+            ])
+        response_body.add_child(alert)
 
     def ask_for_authentication(self, doc, request):
 

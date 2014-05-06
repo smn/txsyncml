@@ -49,8 +49,7 @@ class UserState(object):
         self.current_state = current_state
         self.current_device = Device()
 
-    @property
-    def next_state(self):
+    def get_next_state(self):
         if self.current_state is None:
             next_state = self.states[0]
         else:

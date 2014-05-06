@@ -45,6 +45,14 @@ class SyncMLElement(object):
     def to_xml(self):
         return self.build().toXml()
 
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'value': self.value,
+            'ns': self.ns,
+            'children': [child.to_dict() for child in self.children]
+        }
+
     def find(self, child_name):
         if not isinstance(child_name, basestring):
             child_name = child_name.__name__
@@ -60,6 +68,10 @@ class SyncMLElement(object):
 
     def has(self, prop_name):
         return len(self.find(prop_name)) > 0
+
+    @property
+    def cmd_id(self):
+        return self.get('CmdID')
 
 
 class SessionID(SyncMLElement):
@@ -142,6 +154,14 @@ class Last(SyncMLElement):
 class Anchor(SyncMLElement):
 
     allowed_children = [Last, Next]
+
+    @property
+    def next(self):
+        return self.get('Next')
+
+    @property
+    def last(self):
+        return self.get('Last')
 
     @classmethod
     def create(cls, last, next):
@@ -415,7 +435,7 @@ class DataStore(SyncMLElement):
             return []
 
         [sync_cap] = self.find('SyncCap')
-        return [int(sync_type.value)
+        return [sync_type.value
                 for sync_type in sync_cap.find('SyncType')]
 
 
@@ -450,6 +470,10 @@ class Meta(SyncMLElement):
     @property
     def max_object_size(self):
         return self.get('MaxObjSize')
+
+    @property
+    def anchor(self):
+        return self.get('Anchor')
 
 
 class DevInf(SyncMLElement):
@@ -707,10 +731,6 @@ class Alert(SyncMLElement):
         ] + items)
 
     @property
-    def cmd_id(self):
-        return self.get('CmdID')
-
-    @property
     def data(self):
         return self.get('Data')
 
@@ -795,10 +815,6 @@ class Put(SyncMLElement):
         Meta,
         Item,
     ]
-
-    @property
-    def cmd_id(self):
-        return self.get('CmdID')
 
     def get_item(self):
         [item] = self.find('Item')
