@@ -119,7 +119,7 @@ class TxSyncMLResource(Resource):
         return self.ask_for_authentication(doc, request)
 
     def handle_authorized_syncml(self, user, doc):
-        handler = self.state_handler_map[user.get_next_state()]
+        handler = self.state_handler_map[user.get_current_state()]
         return handler(user, doc)
 
     def handle_package_1_syncml(self, user, doc):
@@ -157,6 +157,7 @@ class TxSyncMLResource(Resource):
             handler = self.alert_handler_map[command.data]
             handler(request_header, response_body, command)
 
+        user.go_to_next_state()
         return SyncML.create(header=response_header, body=response_body)
 
     def handle_sync_two_way(self, request_header, response_body, command):

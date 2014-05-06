@@ -49,16 +49,21 @@ class UserState(object):
         self.current_state = current_state
         self.current_device = Device()
 
-    def get_next_state(self):
-        if self.current_state is None:
-            next_state = self.states[0]
-        else:
-            current_index = self.states.index(self.current_state)
-            try:
-                next_state = self.states[current_index + 1]
-            except IndexError:
-                next_state = self.states[0]
-                log.msg('Went past last state, returning to %s.' % (
-                    next_state,))
+    def get_current_state(self):
+        if self.current_state is None or self.current_state not in self.states:
+            self.current_state = self.states[0]
+        return self.current_state
 
-        return next_state
+    def go_to_next_state(self):
+        if self.current_state in self.states:
+            current_index = self.states.index(self.current_state)
+        else:
+            current_index = 0
+        try:
+            next_state = self.states[current_index + 1]
+        except IndexError:
+            next_state = self.states[0]
+            log.msg('Went past last state, returning to %s.' % (
+                next_state,))
+        self.current_state = next_state
+        return self.get_current_state()
