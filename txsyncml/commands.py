@@ -816,11 +816,12 @@ class Put(SyncMLElement):
 
 class Get(Put):
 
-    def create(self, cmd_id, loc_uri):
+    @classmethod
+    def create(cls, cmd_id, loc_uri):
         return cls('Get', None, children=[
             CmdID.create(cmd_id),
             Meta.create(
-                Type.create('application/vnd.syncml-devinf+xml')),
+                [Type.create('application/vnd.syncml-devinf+xml')]),
             Item.create(target=loc_uri),
         ])
 
@@ -854,7 +855,7 @@ class SyncBody(SyncMLElement):
         return self.find('Put')
 
     def request_devinf(self):
-        self.children.append(Get.create('./devinf11'))
+        self.children.append(Get.create(self.next_cmd_id(), './devinf11'))
 
     def status(self, msg_ref, cmd, code, **kwargs):
         self.add_child(

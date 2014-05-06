@@ -123,4 +123,5 @@ class ClientSyncTestCase(TxSyncMLTestCase):
             username='Bruce2', password='OhBehave')
         response = yield self.request(syncml.to_xml())
         xml = yield pretty_xml(response)
-        self.assertTrue(str(constants.AUTHENTICATION_ACCEPTED) in xml)
+        [locuri] = self.assertXPath('SyncBody/Get/Item/Target/LocURI', xml, 1)
+        self.assertEqual(locuri.text, './devinf11')

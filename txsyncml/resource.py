@@ -30,6 +30,7 @@ class ContentTypeError(TxSyncMLError):
 
 class TxSyncMLResource(Resource):
 
+    debug = False
     isLeaf = True
 
     def __init__(self, reactor):
@@ -75,13 +76,15 @@ class TxSyncMLResource(Resource):
             return xml
 
         d = codec.decode(content)
-        d.addCallback(debug)
+        if self.debug:
+            d.addCallback(debug)
         d.addCallback(SyncMLParser.parse)
         return d
 
     def encode_response(self, doc, codec):
         xml = doc.to_xml()
-        print minidom.parseString(xml).toprettyxml()
+        if self.debug:
+            print minidom.parseString(xml).toprettyxml()
         return codec.encode(xml)
 
     def finish_request(self, response, request, content_type):
@@ -135,12 +138,14 @@ class TxSyncMLResource(Resource):
                     request_header.msg_id, put, constants.STATUS_OK,
                     source_ref='./devinf11')
             else:
-                request.request_devinf()
+                response_body.request_devinf()
+        else:
+            response_body.request_devinf()
 
-        for alert in request_body.alerts:
-            print 'cmdid', alert.cmd_id
-            print 'data', alert.data
-            print 'locuri', alert.item.target.loc_uri
+        # for alert in request_body.alerts:
+        #     print 'cmdid', alert.cmd_id
+        #     print 'data', alert.data
+        #     print 'locuri', alert.item.target.loc_uri
 
         return SyncML.create(header=response_header, body=response_body)
 
@@ -155,7 +160,6 @@ class TxSyncMLResource(Resource):
             target=Target.create(req_header.source.loc_uri),
             source=Source.create(req_header.target.loc_uri))
         body = SyncBody.create()
-        print 'hello?!!!'
         body.status(
             req_header.msg_id, req_header, constants.AUTHORIZATION_REQUIRED,
             target_ref=req_header.target.loc_uri,
